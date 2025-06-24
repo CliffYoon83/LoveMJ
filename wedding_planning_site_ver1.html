@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리의 결혼 준비</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 192, 203, 0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #444;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .heart {
+            color: #ff6b9d;
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .progress-info {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .buttons-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .planning-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .planning-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .planning-button:hover::before {
+            left: 100%;
+        }
+
+        .planning-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .planning-button:active {
+            transform: translateY(-2px);
+        }
+
+        .wedding-button {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+        }
+
+        .travel-button {
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+        }
+
+        .budget-button {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+        }
+
+
+
+        .button-icon {
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ffd700;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .decorative-element {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 192, 203, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float-slow 8s ease-in-out infinite;
+        }
+
+        .decorative-element:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .decorative-element:nth-child(2) {
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px); opacity: 0.3; }
+            50% { transform: translateY(-15px); opacity: 0.6; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: hidden;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            padding: 20px 30px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #444;
+            font-size: 1.5em;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #5a67d8;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-section h3 {
+            color: #444;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timeline-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .timeline-item ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .timeline-item li {
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .hall-info {
+            display: flex;
+            justify-content: center;
+        }
+
+        .single-hall {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .hall-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .hall-item strong {
+            color: #667eea;
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .check-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .check-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .check-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+        }
+
+        .check-item label {
+            color: #555;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .save-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .save-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .save-status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .contact-info {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .contact-info h3 {
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .contact-info p {
+            margin: 5px 0;
+        }
+
+        .trip-overview, .budget-breakdown, .studio-info, .photo-tips, .additional-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .trip-item, .budget-category, .studio-item, .tip-item, .additional-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .budget-category h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .budget-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .budget-item:last-child {
+            border-bottom: none;
+        }
+
+        .amount {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .price {
+            font-size: 1.2em;
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .budget-summary {
+            text-align: center;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .total-amount h2 {
+            font-size: 2em;
+            margin: 0;
+        }
+
+        .photo-placeholder {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .photo-placeholder:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .photo-placeholder span {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .photo-placeholder p {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+            margin: 0;
+        }
+
+        .empty-content {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+
+        .empty-content h3 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .empty-content p {
+            font-size: 1.2em;
+            line-height: 1.6;
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .photo-item {
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .photo-item:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .photo-item img:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .photo-item p {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        @keyframes sparkle {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+                margin: 20px;
+            }
+            
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-body {
+                padding: 20px;
+            }
+            
+            .info-section {
+                padding: 15px;
+            }
+            
+            .timeline-item, .trip-item, .budget-category, .studio-item, .tip-item, .additional-item {
+                padding: 12px;
+            }
+            
+            .budget-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .hall-info {
+                margin: 0;
+            }
+            
+            .single-hall {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 40px 20px;
+            }
+            
+            .title {
+                font-size: 2em;
+            }
+            
+            .planning-button {
+                padding: 18px 25px;
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="decorative-element"></div>
+    <div class="decorative-element"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="title">우리의 결혼 준비 <span class="heart">💕</span></h1>
+            <p class="subtitle">소중한 순간을 함께 계획해보세요</p>
+            <div class="progress-info">
+                <strong>준비 현황을 체크하고 완벽한 결혼식을 만들어가요!</strong>
+            </div>
+        </div>
+
+        <div class="buttons-container">
+            <button class="planning-button wedding-button" onclick="openWeddingModal()">
+                <div class="status-indicator"></div>
+                <span class="button-icon">💒</span>
+                결혼식 본식
+            </button>
+
+            <button class="planning-button travel-button" onclick="openHoneymoonModal()">
+                <div class="status-indicator"></div>
+                <span class="button-icon">✈️</span>
+                신혼 여행
+            </button>
+
+            <button class="planning-button budget-button" onclick="openBudgetModal()">
+                <div class="status-indicator"></div>
+                <span class="button-icon">💰</span>
+                총 예산
+            </button>
+
+
+        </div>
+
+        <div class="footer">
+            <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let checklistData = loadChecklistFromStorage();
+        let budgetItems = loadBudgetFromStorage();
+        // 저장 및 로드 함수들
+        function loadChecklistFromStorage() {
+            const saved = window.localStorage?.getItem('weddingChecklist');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveChecklistToStorage() {
+            if (window.localStorage) {
+                window.localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
+            }
+        }
+
+        function loadBudgetFromStorage() {
+            const saved = window.localStorage?.getItem('weddingBudget');
+            return saved ? JSON.parse(saved) : [
+                { category: '🏨 예식장 (PJ호텔)', items: [
+                    { name: '예식장 대관료', amount: 3500000 },
+                    { name: '식대 (55,000원/인)', amount: 0, note: '계약인원 기준' },
+                    { name: '전문사회자', amount: 0, note: '포함' },
+                    { name: '본식스냅 (원판 10p 2권+합본 30p 1권)', amount: 0, note: '포함' }
+                ]},
+                { category: '📸 스튜디오 (로이스튜디오)', items: [
+                    { name: '세미토탈, 16R액자, 원본전라벨', amount: 2130000 }
+                ]},
+                { category: '👗 드레스 & 메이크업', items: [
+                    { name: '드레스 (위드브라이드)', amount: 0, note: '포함' },
+                    { name: '메이크업 (메이븐)', amount: 11788000 },
+                    { name: '헬퍼비', amount: 450000 },
+                    { name: '헤어변형', amount: 220000 },
+                    { name: '원본수정본', amount: 220000 }
+                ]},
+                { category: '🎵 음향 & 촬영', items: [
+                    { name: '촬영', amount: 430000 },
+                    { name: '축가 (음원포함)', amount: 290000 },
+                    { name: '신랑신부 입퇴장곡', amount: 0, note: 'Fly me to the moon' }
+                ]},
+                { category: '✈️ 신혼여행', items: [
+                    { name: '하와이 6박8일', amount: 4923400 }
+                ]},
+                { category: '💎 예물', items: [
+                    { name: '예물', amount: 2120000 }
+                ]}
+            ];
+        }
+
+        function saveBudgetToStorage() {
+            if (window.localStorage) {
+                window.localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
+            }
+        }
+
+        function calculateTotalBudget() {
+            return budgetItems.reduce((total, category) => {
+                return total + category.items.reduce((catTotal, item) => catTotal + item.amount, 0);
+            }, 0);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString() + '원';
+        }
+
+        function renderBudgetCategories() {
+            return budgetItems.map((category, categoryIndex) => `
+                <div class="budget-category">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 contenteditable="true" onblur="updateCategoryName(${categoryIndex}, this.textContent)">${category.category}</h4>
+                        <button onclick="deleteBudgetCategory(${categoryIndex})" style="background: #ff4757; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">삭제</button>
+                    </div>
+                    ${category.items.map((item, itemIndex) => `
+                        <div class="budget-item">
+                            <span contenteditable="true" onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)">${item.name}</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" value="${item.amount}" onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)" 
+                                       style="width: 120px; padding: 5px; border: 1px solid #ddd; border-radius: 5px;" 
+                                       ${item.note ? 'disabled' : ''}>
+                                <span class="amount">${item.note || formatCurrency(item.amount)}</span>
+                                <button onclick="deleteBudgetItem(${categoryIndex}, ${itemIndex})" style="background: #ff6b7a; color: white; border: none; border-radius: 3px; padding: 3px 6px; cursor: pointer; font-size: 12px;">×</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <button onclick="addBudgetItem(${categoryIndex})" style="background: #667eea; color: white; border: none; border-radius: 5px; padding: 8px 15px; margin-top: 10px; cursor: pointer;">+ 항목 추가</button>
+                </div>
+            `).join('');
+        }
+
+        function addBudgetCategory() {
+            budgetItems.push({
+                category: '새 카테고리',
+                items: [{ name: '새 항목', amount: 0 }]
+            });
+            saveBudgetToStorage();
+            updateBudgetModal();
+        }
+
+        function deleteBudgetCategory(categoryIndex) {
+            budgetItems.splice(categoryIndex, 1);
+            saveBudgetToStorage();
+            updateBudgetModal();
+        }
+
+        function addBudgetItem(categoryIndex) {
+            budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
+            saveBudgetToStorage();
+            updateBudgetModal();
+        }
+
+        function deleteBudgetItem(categoryIndex, itemIndex) {
+            budgetItems[categoryIndex].items.splice(itemIndex, 1);
+            saveBudgetToStorage();
+            updateBudgetModal();
+        }
+
+        function updateCategoryName(categoryIndex, newName) {
+            budgetItems[categoryIndex].category = newName;
+            saveBudgetToStorage();
+        }
+
+        function updateItemName(categoryIndex, itemIndex, newName) {
+            budgetItems[categoryIndex].items[itemIndex].name = newName;
+            saveBudgetToStorage();
+        }
+
+        function updateItemAmount(categoryIndex, itemIndex, newAmount) {
+            budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
+            saveBudgetToStorage();
+            updateBudgetModal();
+        }
+
+        function updateBudgetModal() {
+            const budgetBreakdown = document.querySelector('.budget-breakdown');
+            const totalAmount = document.querySelector('.total-amount h2');
+            
+            if (budgetBreakdown) {
+                budgetBreakdown.innerHTML = renderBudgetCategories();
+            }
+            
+            if (totalAmount) {
+                totalAmount.textContent = `총 예산: ${formatCurrency(calculateTotalBudget())}`;
+            }
+        }
+
+        // 유틸리티 함수
+        function addClickEffect(button) {
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+        }
+
+        function closeModal() {
+            const modalEl = document.querySelector('.modal-overlay');
+            if (modalEl) {
+                modalEl.style.opacity = '0';
+                modalEl.querySelector('.modal-content').style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    modalEl.remove();
+                }, 300);
+            }
+        }
+
+        function saveChecklist() {
+            const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checklistData[checkbox.id] = checkbox.checked;
+            });
+            
+            saveChecklistToStorage();
+            
+            const saveStatus = document.getElementById('saveStatus');
+            if (saveStatus) {
+                saveStatus.textContent = '✅ 체크리스트가 저장되었습니다!';
+                saveStatus.style.color = '#28a745';
+                
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                }, 3000);
+            }
+        }
+
+        function loadChecklist() {
+            const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                if (checklistData[checkbox.id]) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        // 메인 함수들
+        function openWeddingModal() {
+            addClickEffect(event.target.closest('.planning-button'));
+            
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>💒 결혼식 본식 준비 현황</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>🏨 호텔PJ 웨딩 프로세스</h3>
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <strong>예식 60~45일 전</strong>
+                                    <ul>
+                                        <li>웨딩객실 숙박일 예약 (예식 전일/당일 선택)</li>
+                                        <li>시식 일정 예약 (첫 예식 30분 전부터 1시간)</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>예식 45~30일 전</strong>
+                                    <ul>
+                                        <li>최종 체크리스트 메일 발송</li>
+                                        <li>리셉션 드레스 피팅 예약 (평일 11:00-16:00)</li>
+                                        <li>전문사회자 식순 확인</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>예식 30~14일 전</strong>
+                                    <ul>
+                                        <li>최종 체크리스트 확인</li>
+                                        <li>외부 답례품 반입 불가 (호텔 답례품만 주문 가능)</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>예식 7~3일 전</strong>
+                                    <ul>
+                                        <li>혼주 메이크업 시간 안내</li>
+                                        <li>본식 스냅 업체 연락</li>
+                                        <li>연주 및 사회자 업체 연락</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>예식 당일</strong>
+                                    <ul>
+                                        <li>예식 1시간 30분 전 호텔 도착</li>
+                                        <li>필수 지참: 포토테이블 사진, 대형액자, 식권, 음원 USB</li>
+                                        <li>도착 5분 전 웨딩예약실 연락 (02-2280-7070)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>🎪 예식홀 정보</h3>
+                            <div class="hall-info">
+                                <div class="hall-item single-hall">
+                                    <strong>헤스티아홀</strong>
+                                    <p>총 1시간 30분 이용 (입장 30분 + 예식 30분 + 촬영 30분)</p>
+                                    <p>축가 최대 2곡 (1절씩 나누어 진행 가능)</p>
+                                    <p>영상 및 축가 MR은 USB 지참 (VOB, AVI, MP4 형식)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📋 중요 준비사항</h3>
+                            <div class="checklist">
+                                <div class="check-item">
+                                    <input type="checkbox" id="contract">
+                                    <label for="contract">웨딩계약서 서명 및 회신 (계약 후 2주 이내)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="guest-count">
+                                    <label for="guest-count">보증인원 확정 (예식 14일 전까지)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="food-ticket">
+                                    <label for="food-ticket">식권 직접 준비 (도장/서명 후 당일 지참)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="parking">
+                                    <label for="parking">혼주 차량 등록 (예식 8일 전까지)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="usb">
+                                    <label for="usb">영상/축가 USB 준비 (VOB, AVI, MP4 형식)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="dress">
+                                    <label for="dress">리셉션 드레스 피팅 (평일, 셀프 3만원/직원 4만원)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="save-section">
+                                <button class="save-btn" onclick="saveChecklist()">
+                                    <span class="button-icon">💾</span>
+                                    체크리스트 저장
+                                </button>
+                                <p class="save-status" id="saveStatus"></p>
+                            </div>
+                        </div>
+
+                        <div class="contact-info">
+                            <h3>📞 연락처</h3>
+                            <p><strong>호텔PJ 웨딩예약실</strong></p>
+                            <p>전화: 02-2280-7070</p>
+                            <p>팩스: 02-2273-3129</p>
+                            <p>주소: 서울시 중구 인현동 2가 73-1번지</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                loadChecklist();
+            }, 10);
+        }
+
+        function openHoneymoonModal() {
+            addClickEffect(event.target.closest('.planning-button'));
+            
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>✈️ 신혼여행 준비 현황</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>🌺 하와이 오아후 6박 8일</h3>
+                            <div class="trip-overview">
+                                <div class="trip-item">
+                                    <strong>항공편</strong>
+                                    <p>에어프레미아 항공</p>
+                                    <p>10.27 (월) 인천 22:30 ▶ 호놀룰루 11:50</p>
+                                    <p>11.02 (일) 호놀룰루 14:20 ▶ 인천 20:20</p>
+                                </div>
+                                <div class="trip-item">
+                                    <strong>숙박</strong>
+                                    <p>하얏트 리젠시 (오션뷰) - 6박</p>
+                                    <p>5박 이상시 시티뷰→오션뷰 룸업글 특가!</p>
+                                </div>
+                                <div class="trip-item">
+                                    <strong>예상 비용</strong>
+                                    <p style="font-size: 1.2em; color: #667eea; font-weight: bold;">172만원 ($1,272)</p>
+                                    <p style="font-size: 0.9em; color: #888;">* 항공료 별도</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📅 여행 일정</h3>
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <strong>1일차 (인천→호놀룰루)</strong>
+                                    <ul>
+                                        <li>인천공항 출발 (10.27 월 22:30)</li>
+                                        <li>호놀룰루 도착 (11:50) 후 입국수속</li>
+                                        <li>호놀룰루 시내관광 포함</li>
+                                        <li>호텔 체크인 및 자유시간</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>2-5일차 (오아후 자유일정)</strong>
+                                    <ul>
+                                        <li>카카아코 벽화거리 (인생샷 명소)</li>
+                                        <li>알라모아나 쇼핑센터</li>
+                                        <li>와이키키 비치 자유시간</li>
+                                        <li>허니문 미니스냅 촬영 (1시간, 보정본 30장 제공)</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>6일차 (자유일정)</strong>
+                                    <ul>
+                                        <li>마지막 자유시간</li>
+                                        <li>쇼핑 및 개인 일정</li>
+                                    </ul>
+                                </div>
+                                <div class="timeline-item">
+                                    <strong>7-8일차 (호놀룰루→인천)</strong>
+                                    <ul>
+                                        <li>호텔 체크아웃</li>
+                                        <li>호놀룰루 출발 (11.02 일 14:20)</li>
+                                        <li>인천공항 도착 (20:20)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>✅ 준비 체크리스트</h3>
+                            <div class="checklist">
+                                <div class="check-item">
+                                    <input type="checkbox" id="seat-reservation">
+                                    <label for="seat-reservation">하루 전날 좌석 예약하기</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="travel-payment">
+                                    <label for="travel-payment">여행사 결제 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="esta">
+                                    <label for="esta">ESTA 신청 ($21/인)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="passport">
+                                    <label for="passport">여권 유효기간 확인</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="snap-tip">
+                                    <label for="snap-tip">스냅 촬영 작가팁 준비 ($30/인)</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="travel-insurance">
+                                    <label for="travel-insurance">여행자보험 확인 (2억원 포함)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="save-section">
+                                <button class="save-btn" onclick="saveChecklist()">
+                                    <span class="button-icon">💾</span>
+                                    체크리스트 저장
+                                </button>
+                                <p class="save-status" id="saveStatus"></p>
+                            </div>
+                        </div>
+
+                        <div class="contact-info">
+                            <h3>🎁 포함사항</h3>
+                            <p>• 왕복 공항↔호텔 픽업/샌딩</p>
+                            <p>• 도착일 시내관광</p>
+                            <p>• 모든 호텔 리조트피</p>
+                            <p>• 가이드팁 포함</p>
+                            <p>• 핑크 트롤리 원데이패스</p>
+                            <p>• 허니문 와이키키 미니스냅 촬영</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                loadChecklist();
+            }, 10);
+        }
+
+        function openBudgetModal() {
+            addClickEffect(event.target.closest('.planning-button'));
+            
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>💰 총 예산 현황</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>💍 웨딩 예산 총계</h3>
+                            <div class="budget-summary">
+                                <div class="total-amount">
+                                    <h2 style="color: white; margin-bottom: 20px;">총 예산: ${formatCurrency(calculateTotalBudget())}</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3>📊 항목별 상세 예산</h3>
+                                <button onclick="addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                            </div>
+                            <div class="budget-breakdown">
+                                ${renderBudgetCategories()}
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📝 추가 준비사항</h3>
+                            <div class="additional-items">
+                                <div class="additional-item">
+                                    <strong>혼주 예복</strong>
+                                    <p>• 한복 2벌: 66만원 (우리옷길쌈)</p>
+                                    <p>• 턱시도: 82만원</p>
+                                </div>
+                                <div class="additional-item">
+                                    <strong>기타</strong>
+                                    <p>• 청첩장 + 식권 제작</p>
+                                    <p>• 신부 피부관리</p>
+                                    <p>• 답례품</p>
+                                    <p>• 양가인사 선물</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                loadChecklist();
+            }, 10);
+        }
+
+        function openPhotoModal() {
+            addClickEffect(event.target.closest('.planning-button'));
+            
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📸 웨딩 사진</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>💕 우리의 웨딩 사진</h3>
+                            <div class="photo-gallery">
+                                <div class="photo-item">
+                                    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUTExMWFhUXGBcYGBgYGBgYGBgYGBgXFxgYGBcYHSggGB0lHRcYITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGi0dHR0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIALcBEwMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAEAAIDBQYBBwj/xAA8EAABAwIEBAQEBQMDBAMAAAABAAIRAyEEEjFBBVFhcQYigZETobHwMkLB0eEUI1JikrLxBxUkM3KCosL/xAAYAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/EACIRAAICAgICAwEBAAAAAAAAAAABAhEhMQMSQVETImFxBP/aAAwDAQACEQMRAD8A8/CdCaEQE6EsKCknQlhAAJQlCCkhJJSSk7JsLCVpJQkkw0kSSEgR+O4TQzKAAOgjkNlHgOANB/EXO7/ZdwPEJc2N9exWm4ZxNjhDiWk/M9kdA17KurD6fwtdM+lXYnWdD/J75SHiksAOsJyUlO9qzJJj1K7lSz9kvT6CjKJJH3KelNSSd8Fs//2Q==" alt="웨딩 사진 1" onclick="openImageModal(this.src)">
+                                    <p>스튜디오 웨딩 사진</p>
+                                </div>
+                                <div class="photo-item">
+                                    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUTExMWFhUXGBcYGBgYGBgYGBgYGBgXFxgYGBcYHSggGB0lHRcYITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGi0dHR0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIALcBEwMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAEAAIDBQYBBwj/xAA8EAABAwIEBAQEBQMDBAMAAAABAAIRAyEEEjVBBVFhcQYigZETobHwMkLB0eEU9fEUM1JikrLxBxQkM3KCosL/8AAYAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/EACIRAAICAgICAwEBAAAAAAAAAAABAhEhMQMSQVETImFxBP/aAAwDAQACEQMRAD8A8/CdCaEQE6EsKCkhJSSQkmwhCUJQkGkpJJuUjokSSSKJJJNJJJJuX//2Q==" alt="웨딩 사진 2" onclick="openImageModal(this.src)">
+                                    <p>본식 웨딩 사진</p>
+                                </div>
+                                <div class="photo-item">
+                                    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUTExMWFhUXGBcYGBgYGBgYGBgYGBgXFxgYGBcYHSggGB0lHRcYITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGi0dHR0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIALcBEwMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAEAAIDBQYBBwj/xAA8EAABAwIEBAQEBQMDBAMAAAABAAIRAyEEEjVBBVFhcQYigZETobHwMkLB0eEU9fEUM1JikrLxBxQkM3KCosL/YAAYAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/EACIRAAICAgICAwEBAAAAAAAAAAABAhEhMQMSQVETImFxBP/aAAwDAQACEQMRAD8A8/CdCaEQE6EsKCkhJSSQkmwhCUJQkGkpJJuUjokSSSKJJJNJJJJuX//2Q==" alt="웨딩 사진 3" onclick="openImageModal(this.src)">
+                                    <p>로맨틱 웨딩 사진</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function openImageModal(imageSrc) {
+            const imageModalOverlay = document.createElement('div');
+            imageModalOverlay.className = 'modal-overlay';
+            imageModalOverlay.style.zIndex = '1001';
+            imageModalOverlay.innerHTML = `
+                <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent; box-shadow: none;">
+                    <img src="${imageSrc}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 15px;" onclick="closeImageModal()">
+                </div>
+            `;
+            
+            document.body.appendChild(imageModalOverlay);
+            
+            setTimeout(() => {
+                imageModalOverlay.style.opacity = '1';
+                imageModalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function closeImageModal() {
+            const imageModalEl = document.querySelector('.modal-overlay[style*="z-index: 1001"]');
+            if (imageModalEl) {
+                imageModalEl.style.opacity = '0';
+                imageModalEl.querySelector('.modal-content').style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    imageModalEl.remove();
+                }, 300);
+            }
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeModal();
+            }
+        });
+
+        // 페이지 로드 시 애니메이션
+        window.addEventListener('load', function() {
+            const buttons = document.querySelectorAll('.planning-button');
+            buttons.forEach((button, index) => {
+                setTimeout(() => {
+                    button.style.opacity = '0';
+                    button.style.transform = 'translateY(30px)';
+                    button.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        button.style.opacity = '1';
+                        button.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+        });
+
+        // 배경 효과
+        setInterval(() => {
+            const container = document.querySelector('.container');
+            if (container) {
+                const sparkle = document.createElement('div');
+                sparkle.style.position = 'absolute';
+                sparkle.style.width = '4px';
+                sparkle.style.height = '4px';
+                sparkle.style.background = '#ffd700';
+                sparkle.style.borderRadius = '50%';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.top = Math.random() * 100 + '%';
+                sparkle.style.animation = 'sparkle 2s ease-out forwards';
+                sparkle.style.pointerEvents = 'none';
+                
+                container.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 2000);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
