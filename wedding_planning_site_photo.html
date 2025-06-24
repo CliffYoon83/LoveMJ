@@ -989,9 +989,18 @@
             const uploadArea = document.getElementById('photoUploadArea');
             const fileInput = document.getElementById('fileInput');
             const placeholder = document.getElementById('uploadPlaceholder');
+            const uploadBtn = placeholder.querySelector('.upload-btn');
+
+            if (!uploadArea || !fileInput || !placeholder) {
+                console.error('Upload elements not found');
+                return;
+            }
 
             // 파일 선택 이벤트
-            fileInput.addEventListener('change', handleFileSelect);
+            fileInput.addEventListener('change', function(e) {
+                console.log('File input changed:', e.target.files);
+                handleFileSelect(e);
+            });
 
             // 드래그 앤 드롭 이벤트
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -1012,7 +1021,16 @@
             });
 
             uploadArea.addEventListener('drop', handleDrop, false);
-            placeholder.addEventListener('click', () => fileInput.click());
+            
+            // placeholder 클릭 이벤트 (버튼 영역 제외)
+            placeholder.addEventListener('click', function(e) {
+                // 버튼을 클릭한 경우는 제외
+                if (e.target.classList.contains('upload-btn')) {
+                    return;
+                }
+                console.log('Placeholder clicked, opening file dialog');
+                fileInput.click();
+            });
         }
 
         function preventDefaults(e) {
@@ -1027,15 +1045,28 @@
         }
 
         function handleFileSelect(e) {
+            console.log('handleFileSelect called');
             const files = e.target.files;
-            handleFiles(files);
+            console.log('Selected files:', files.length);
+            
+            if (files.length > 0) {
+                handleFiles(files);
+                // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+                e.target.value = '';
+            }
         }
 
         function handleFiles(files) {
-            ([...files]).forEach(uploadPhoto);
+            console.log('handleFiles called with', files.length, 'files');
+            Array.from(files).forEach(file => {
+                console.log('Processing file:', file.name, file.type);
+                uploadPhoto(file);
+            });
         }
 
         function uploadPhoto(file) {
+            console.log('uploadPhoto called for:', file.name);
+            
             if (!file.type.startsWith('image/')) {
                 alert('이미지 파일만 업로드할 수 있습니다.');
                 return;
@@ -1043,6 +1074,7 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
+                console.log('File read successfully');
                 const photoData = {
                     id: Date.now() + Math.random(),
                     src: e.target.result,
@@ -1051,18 +1083,30 @@
                 };
                 
                 uploadedPhotos.push(photoData);
+                console.log('Photo added to array. Total photos:', uploadedPhotos.length);
                 savePhotosToStorage();
                 renderPhotos();
             };
+            
+            reader.onerror = function(e) {
+                console.error('File read error:', e);
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+            };
+            
             reader.readAsDataURL(file);
         }
 
         function renderPhotos() {
+            console.log('renderPhotos called, photos count:', uploadedPhotos.length);
             const gallery = document.getElementById('photoGallery');
-            if (!gallery) return;
+            
+            if (!gallery) {
+                console.error('Photo gallery element not found');
+                return;
+            }
 
             if (uploadedPhotos.length === 0) {
-                gallery.innerHTML = '';
+                gallery.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">업로드된 사진이 없습니다.</p>';
                 return;
             }
 
@@ -1073,6 +1117,8 @@
                     <div class="photo-caption">${photo.name}</div>
                 </div>
             `).join('');
+            
+            console.log('Gallery updated with', uploadedPhotos.length, 'photos');
         }
 
         function deletePhoto(photoId) {
@@ -1434,7 +1480,7 @@
                                 <div class="upload-placeholder" id="uploadPlaceholder">
                                     <span>📷</span>
                                     <p>사진을 여기에 드래그 앤 드롭하거나<br>클릭해서 선택하세요</p>
-                                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">사진 선택</button>
+                                    <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">사진 선택</button>
                                 </div>
                                 <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
                             </div>
