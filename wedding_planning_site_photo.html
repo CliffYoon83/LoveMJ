@@ -982,6 +982,119 @@
             });
         }
 
+        // 사진 업로드 관련 함수들
+        let uploadedPhotos = [];
+
+        function setupPhotoUpload() {
+            const uploadArea = document.getElementById('photoUploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const placeholder = document.getElementById('uploadPlaceholder');
+
+            // 파일 선택 이벤트
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // 드래그 앤 드롭 이벤트
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    placeholder.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    placeholder.classList.remove('drag-over');
+                }, false);
+            });
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+            placeholder.addEventListener('click', () => fileInput.click());
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            ([...files]).forEach(uploadPhoto);
+        }
+
+        function uploadPhoto(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드할 수 있습니다.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    src: e.target.result,
+                    name: file.name,
+                    size: file.size
+                };
+                
+                uploadedPhotos.push(photoData);
+                savePhotosToStorage();
+                renderPhotos();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderPhotos() {
+            const gallery = document.getElementById('photoGallery');
+            if (!gallery) return;
+
+            if (uploadedPhotos.length === 0) {
+                gallery.innerHTML = '';
+                return;
+            }
+
+            gallery.innerHTML = uploadedPhotos.map(photo => `
+                <div class="photo-preview">
+                    <img src="${photo.src}" alt="${photo.name}" onclick="openImageModal('${photo.src}')">
+                    <button class="photo-delete-btn" onclick="deletePhoto('${photo.id}')">&times;</button>
+                    <div class="photo-caption">${photo.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function deletePhoto(photoId) {
+            uploadedPhotos = uploadedPhotos.filter(photo => photo.id != photoId);
+            savePhotosToStorage();
+            renderPhotos();
+        }
+
+        function savePhotosToStorage() {
+            try {
+                // 메모리에만 저장 (브라우저 저장소는 사용하지 않음)
+                console.log(`${uploadedPhotos.length}개의 사진이 저장되었습니다.`);
+            } catch (error) {
+                console.log('사진 저장 중 오류가 발생했습니다:', error);
+            }
+        }
+
+        function loadPhotos() {
+            // 메모리에서 사진 로드 (실제 구현에서는 서버나 다른 저장소에서 로드)
+            renderPhotos();
+        }
+
         // 메인 함수들
         function openWeddingModal() {
             addClickEffect(event.target.closest('.planning-button'));
