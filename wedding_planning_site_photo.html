@@ -507,10 +507,15 @@
             margin: 0;
         }
 
-        .photo-placeholder {
+        .photo-upload-area {
+            margin-bottom: 30px;
+        }
+
+        .upload-placeholder {
             width: 100%;
-            height: 300px;
+            min-height: 200px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 3px dashed #667eea;
             border-radius: 15px;
             display: flex;
             flex-direction: column;
@@ -518,24 +523,113 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        .photo-placeholder:hover {
+        .upload-placeholder:hover {
+            background: linear-gradient(135deg, #e8eaf6 0%, #b39ddb 100%);
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-placeholder.drag-over {
+            background: linear-gradient(135deg, #e1f5fe 0%, #81d4fa 100%);
+            border-color: #2196f3;
             transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
 
-        .photo-placeholder span {
-            font-size: 3em;
-            margin-bottom: 10px;
+        .upload-placeholder span {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.7;
         }
 
-        .photo-placeholder p {
+        .upload-placeholder p {
             font-weight: bold;
             color: #667eea;
-            font-size: 1.1em;
-            margin: 0;
+            font-size: 1.2em;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .photo-preview {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-preview img {
+            width: 250px;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 74, 87, 0.9);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .photo-preview:hover .photo-delete-btn {
+            opacity: 1;
+        }
+
+        .photo-delete-btn:hover {
+            background: rgba(255, 74, 87, 1);
+            transform: scale(1.1);
+        }
+
+        .photo-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-size: 0.9em;
+            text-align: center;
         }
 
         .empty-content {
@@ -1223,9 +1317,16 @@
                     <div class="modal-body">
                         <div class="info-section">
                             <h3>💕 우리의 웨딩 사진</h3>
-                            <div class="empty-content">
-                                <h3>📷 사진 갤러리</h3>
-                                <p>아직 업로드된 사진이 없습니다.<br>소중한 순간들을 여기에 추가해보세요!</p>
+                            <div class="photo-upload-area" id="photoUploadArea">
+                                <div class="upload-placeholder" id="uploadPlaceholder">
+                                    <span>📷</span>
+                                    <p>사진을 여기에 드래그 앤 드롭하거나<br>클릭해서 선택하세요</p>
+                                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">사진 선택</button>
+                                </div>
+                                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                            </div>
+                            <div class="photo-gallery" id="photoGallery">
+                                <!-- 업로드된 사진들이 여기에 표시됩니다 -->
                             </div>
                         </div>
                     </div>
@@ -1237,6 +1338,8 @@
             setTimeout(() => {
                 modalOverlay.style.opacity = '1';
                 modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                setupPhotoUpload();
+                loadPhotos();
             }, 10);
         }
 
