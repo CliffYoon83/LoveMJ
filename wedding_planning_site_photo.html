@@ -971,16 +971,27 @@
             return budgetItems.map((category, categoryIndex) => `
                 <div class="budget-category">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 contenteditable="true" onblur="updateCategoryName(${categoryIndex}, this.textContent)" style="cursor: text;">${category.category}</h4>
+                        <h4 contenteditable="true" 
+                            onblur="updateCategoryName(${categoryIndex}, this.textContent)" 
+                            data-category="${categoryIndex}"
+                            style="cursor: text; min-width: 200px; padding: 5px; border-radius: 3px; transition: background-color 0.3s;"
+                            title="클릭해서 편집하세요 (20초 후 자동 저장)">${category.category}</h4>
                         <button onclick="deleteBudgetCategory(${categoryIndex})" style="background: #ff4757; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">삭제</button>
                     </div>
                     ${category.items.map((item, itemIndex) => `
                         <div class="budget-item">
-                            <span contenteditable="true" onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)" style="cursor: text; min-width: 150px; display: inline-block;">${item.name}</span>
+                            <span contenteditable="true" 
+                                  onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)" 
+                                  data-item="${categoryIndex}_${itemIndex}"
+                                  style="cursor: text; min-width: 200px; display: inline-block; padding: 3px; border-radius: 3px; transition: background-color 0.3s;"
+                                  title="클릭해서 편집하세요 (20초 후 자동 저장)">${item.name}</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="number" value="${item.amount}" onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)" 
+                                <input type="number" value="${item.amount}" 
+                                       onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)"
+                                       oninput="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)"
                                        style="width: 120px; padding: 5px; border: 1px solid #ddd; border-radius: 5px;" 
-                                       ${item.note ? 'disabled' : ''}>
+                                       ${item.note ? 'disabled' : ''}
+                                       title="금액 입력 (5초 후 자동 저장)">
                                 <span class="amount">${item.note || formatCurrency(item.amount)}</span>
                                 <button onclick="deleteBudgetItem(${categoryIndex}, ${itemIndex})" style="background: #ff6b7a; color: white; border: none; border-radius: 3px; padding: 3px 6px; cursor: pointer; font-size: 12px;">×</button>
                             </div>
@@ -990,6 +1001,11 @@
                 </div>
             `).join('');
         }
+
+        // 디바운싱을 위한 타이머 변수들
+        let categoryNameTimer = {};
+        let itemNameTimer = {};
+        let amountTimer = {};
 
         // 예산 관련 함수들을 전역으로 등록
         window.addBudgetCategory = function() {
@@ -1030,28 +1046,116 @@
         }
 
         window.updateCategoryName = function(categoryIndex, newName) {
-            console.log('카테고리명 변경:', categoryIndex, newName);
-            if (budgetItems[categoryIndex] && newName.trim()) {
-                budgetItems[categoryIndex].category = newName.trim();
-                syncToCloud('budget', budgetItems);
+            console.log('카테고리명 변경 대기 중:', categoryIndex, newName);
+            
+            // 기존 타이머 클리어
+            if (categoryNameTimer[categoryIndex]) {
+                clearTimeout(categoryNameTimer[categoryIndex]);
             }
+            
+            // 20초 후에 저장
+            categoryNameTimer[categoryIndex] = setTimeout(() => {
+                if (budgetItems[categoryIndex] && newName.trim()) {
+                    budgetItems[categoryIndex].category = newName.trim();
+                    syncToCloud('budget', budgetItems);
+                    console.log('카테고리명 저장됨:', newName);
+                    
+                    // 저장 완료 표시
+                    const element = document.querySelector(`[data-category="${categoryIndex}"]`);
+                    if (element) {
+                        element.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                }
+                delete categoryNameTimer[categoryIndex];
+            }, 20000); // 20초
         }
 
         window.updateItemName = function(categoryIndex, itemIndex, newName) {
-            console.log('항목명 변경:', categoryIndex, itemIndex, newName);
-            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex] && newName.trim()) {
-                budgetItems[categoryIndex].items[itemIndex].name = newName.trim();
-                syncToCloud('budget', budgetItems);
+            console.log('항목명 변경 대기 중:', categoryIndex, itemIndex, newName);
+            
+            const key = `${categoryIndex}_${itemIndex}`;
+            
+            // 기존 타이머 클리어
+            if (itemNameTimer[key]) {
+                clearTimeout(itemNameTimer[key]);
             }
+            
+            // 20초 후에 저장
+            itemNameTimer[key] = setTimeout(() => {
+                if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex] && newName.trim()) {
+                    budgetItems[categoryIndex].items[itemIndex].name = newName.trim();
+                    syncToCloud('budget', budgetItems);
+                    console.log('항목명 저장됨:', newName);
+                    
+                    // 저장 완료 표시
+                    const element = document.querySelector(`[data-item="${categoryIndex}_${itemIndex}"]`);
+                    if (element) {
+                        element.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                }
+                delete itemNameTimer[key];
+            }, 20000); // 20초
         }
 
         window.updateItemAmount = function(categoryIndex, itemIndex, newAmount) {
             console.log('금액 변경:', categoryIndex, itemIndex, newAmount);
-            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
-                budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
-                syncToCloud('budget', budgetItems);
-                updateBudgetModal();
+            
+            const key = `${categoryIndex}_${itemIndex}`;
+            
+            // 기존 타이머 클리어
+            if (amountTimer[key]) {
+                clearTimeout(amountTimer[key]);
             }
+            
+            // 즉시 UI 업데이트 (총액 표시용)
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
+                const tempAmount = parseInt(newAmount) || 0;
+                budgetItems[categoryIndex].items[itemIndex].amount = tempAmount;
+                
+                // 총액만 즉시 업데이트
+                const totalAmount = document.querySelector('.total-amount h2');
+                if (totalAmount) {
+                    const newTotal = calculateTotalBudget();
+                    totalAmount.innerHTML = `총 예산: ${formatCurrency(newTotal)}<br><span style="font-size: 0.6em; opacity: 0.9;">확정 항목들의 합계입니다</span>`;
+                }
+            }
+            
+            // 5초 후에 저장 (금액은 빠르게 저장)
+            amountTimer[key] = setTimeout(() => {
+                syncToCloud('budget', budgetItems);
+                console.log('금액 저장됨:', newAmount);
+                delete amountTimer[key];
+            }, 5000); // 5초
+        }
+
+        // 수동 저장 함수
+        window.saveBudgetNow = function() {
+            // 모든 대기 중인 타이머 실행
+            Object.keys(categoryNameTimer).forEach(key => {
+                clearTimeout(categoryNameTimer[key]);
+            });
+            Object.keys(itemNameTimer).forEach(key => {
+                clearTimeout(itemNameTimer[key]);
+            });
+            Object.keys(amountTimer).forEach(key => {
+                clearTimeout(amountTimer[key]);
+            });
+            
+            // 즉시 저장
+            syncToCloud('budget', budgetItems);
+            console.log('예산 데이터 즉시 저장됨');
+            alert('예산 데이터가 저장되었습니다!');
+            
+            // 타이머 초기화
+            categoryNameTimer = {};
+            itemNameTimer = {};
+            amountTimer = {};
         }
 
         function updateBudgetModal() {
