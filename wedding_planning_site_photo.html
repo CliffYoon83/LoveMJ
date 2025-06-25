@@ -814,29 +814,55 @@
             return sessionId;
         }
 
-        // 기존 저장 함수들을 클라우드 동기화로 수정
+        // 기존 저장 함수들을 클라우드 동기화로 수정 (안전성 강화)
         function saveChecklistToStorage() {
-            if (localStorage) {
-                localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
+            try {
+                if (localStorage) {
+                    localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
+                }
+                // 디바운싱된 클라우드 저장
+                clearTimeout(window.cloudSaveTimeout);
+                window.cloudSaveTimeout = setTimeout(() => {
+                    saveToCloud();
+                }, 1000); // 1초 후 클라우드 저장
+            } catch (error) {
+                console.error('체크리스트 저장 오류:', error);
             }
-            saveToCloud();
         }
 
         function loadChecklistFromStorage() {
-            const saved = localStorage?.getItem('weddingChecklist');
-            return saved ? JSON.parse(saved) : {};
+            try {
+                const saved = localStorage?.getItem('weddingChecklist');
+                return saved ? JSON.parse(saved) : {};
+            } catch (error) {
+                console.error('체크리스트 로드 오류:', error);
+                return {};
+            }
         }
 
         function saveBudgetToStorage() {
-            if (localStorage) {
-                localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
+            try {
+                if (localStorage) {
+                    localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
+                }
+                // 디바운싱된 클라우드 저장
+                clearTimeout(window.cloudSaveTimeout);
+                window.cloudSaveTimeout = setTimeout(() => {
+                    saveToCloud();
+                }, 1000); // 1초 후 클라우드 저장
+            } catch (error) {
+                console.error('예산 저장 오류:', error);
             }
-            saveToCloud();
         }
 
         function loadBudgetFromStorage() {
-            const saved = localStorage?.getItem('weddingBudget');
-            return saved ? JSON.parse(saved) : getDefaultBudgetData();
+            try {
+                const saved = localStorage?.getItem('weddingBudget');
+                return saved ? JSON.parse(saved) : getDefaultBudgetData();
+            } catch (error) {
+                console.error('예산 로드 오류:', error);
+                return getDefaultBudgetData();
+            }
         }
 
         function getDefaultBudgetData() {
@@ -871,31 +897,68 @@
             ];
         }
 
-        // 실시간 동기화 리스너 설정
-        if ('BroadcastChannel' in window) {
-            const channel = new BroadcastChannel('wedding_sync');
-            channel.onmessage = function(event) {
-                if (event.data.type === 'data_update') {
-                    console.log('다른 탭에서 데이터 업데이트 감지');
-                    syncFromCloud();
+        // 실시간 동기화 리스너 설정 (안전성 강화)
+        let broadcastChannel = null;
+
+        function setupSyncListeners() {
+            try {
+                if ('BroadcastChannel' in window && !broadcastChannel) {
+                    broadcastChannel = new BroadcastChannel('wedding_sync');
+                    broadcastChannel.onmessage = function(event) {
+                        try {
+                            if (event.data.type === 'data_update') {
+                                console.log('다른 탭에서 데이터 업데이트 감지');
+                                // 즉시 동기화하지 않고 약간의 지연
+                                setTimeout(() => {
+                                    syncFromCloud();
+                                }, 500);
+                            }
+                        } catch (error) {
+                            console.error('BroadcastChannel 메시지 처리 오류:', error);
+                        }
+                    };
                 }
-            };
+            } catch (error) {
+                console.log('BroadcastChannel 설정 오류:', error);
+            }
         }
 
-        // 페이지 포커스 시 동기화
+        // 페이지 포커스 시 동기화 (안전성 강화)
+        let focusTimeout = null;
         window.addEventListener('focus', function() {
             console.log('페이지 포커스 - 동기화 체크');
-            syncFromCloud();
+            clearTimeout(focusTimeout);
+            focusTimeout = setTimeout(() => {
+                syncFromCloud();
+            }, 500);
         });
 
-        // 주기적 동기화 (3초마다)
-        setInterval(function() {
-            syncFromCloud();
-        }, SYNC_INTERVAL);
+        // 주기적 동기화 (안전성 강화)
+        let syncInterval = null;
+        function startPeriodicSync() {
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(function() {
+                try {
+                    syncFromCloud();
+                } catch (error) {
+                    console.error('주기적 동기화 오류:', error);
+                }
+            }, SYNC_INTERVAL);
+        }
 
-        // 페이지 떠날 때 마지막 저장
+        // 페이지 떠날 때 마지막 저장 및 정리
         window.addEventListener('beforeunload', function() {
-            saveToCloud();
+            try {
+                saveToCloud();
+                if (broadcastChannel) {
+                    broadcastChannel.close();
+                }
+                if (syncInterval) {
+                    clearInterval(syncInterval);
+                }
+            } catch (error) {
+                console.error('페이지 종료 시 정리 오류:', error);
+            }
         });
 
         function calculateTotalBudget() {
@@ -1027,27 +1090,48 @@
         }
 
         function loadChecklist() {
-            const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (checklistData[checkbox.id]) {
-                    checkbox.checked = true;
-                }
+            // 약간의 지연을 두어 DOM이 완전히 로드된 후 실행
+            setTimeout(() => {
+                const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+                console.log('체크박스 로드 중:', checkboxes.length, '개 발견');
                 
-                // 체크박스 변경 시 자동 저장
-                checkbox.addEventListener('change', function() {
-                    checklistData[this.id] = this.checked;
-                    saveChecklistToStorage(); // 클라우드 동기화 포함
+                checkboxes.forEach(checkbox => {
+                    // 저장된 상태 복원
+                    if (checklistData[checkbox.id]) {
+                        checkbox.checked = true;
+                    }
                     
-                    // 시각적 피드백
-                    const checkItem = this.closest('.check-item');
-                    if (checkItem) {
-                        checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '#ffe8e8';
-                        setTimeout(() => {
-                            checkItem.style.backgroundColor = '';
-                        }, 500);
+                    // 기존 이벤트 리스너가 있는지 확인하고 중복 방지
+                    if (!checkbox.hasAttribute('data-listener-added')) {
+                        checkbox.setAttribute('data-listener-added', 'true');
+                        
+                        // 단일 change 이벤트만 사용
+                        checkbox.addEventListener('change', function(event) {
+                            console.log('체크박스 변경:', this.id, this.checked);
+                            
+                            // 즉시 저장
+                            checklistData[this.id] = this.checked;
+                            
+                            // 디바운싱을 통한 클라우드 저장 (과도한 저장 방지)
+                            clearTimeout(this.saveTimeout);
+                            this.saveTimeout = setTimeout(() => {
+                                saveChecklistToStorage();
+                            }, 500); // 0.5초 후 저장
+                            
+                            // 시각적 피드백
+                            const checkItem = this.closest('.check-item');
+                            if (checkItem) {
+                                checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '#ffe8e8';
+                                setTimeout(() => {
+                                    checkItem.style.backgroundColor = '';
+                                }, 800);
+                            }
+                        });
                     }
                 });
-            });
+                
+                console.log('체크박스 이벤트 리스너 설정 완료');
+            }, 100);
         }
 
         // 메인 함수들
@@ -1438,77 +1522,110 @@
             }
         });
 
-        // 페이지 로드 시 애니메이션 및 데이터 초기화
+        // 페이지 로드 시 애니메이션 및 데이터 초기화 (안전성 강화)
         window.addEventListener('load', function() {
-            // 데이터 초기화 (클라우드 동기화 포함)
-            initializeData();
-            
-            const buttons = document.querySelectorAll('.planning-button');
-            buttons.forEach((button, index) => {
-                setTimeout(() => {
-                    button.style.opacity = '0';
-                    button.style.transform = 'translateY(30px)';
-                    button.style.transition = 'all 0.6s ease';
-                    
+            try {
+                console.log('페이지 로드 시작');
+                
+                // 데이터 초기화 (클라우드 동기화 포함)
+                initializeData();
+                
+                // 동기화 리스너 설정
+                setupSyncListeners();
+                
+                // 주기적 동기화 시작
+                startPeriodicSync();
+                
+                const buttons = document.querySelectorAll('.planning-button');
+                buttons.forEach((button, index) => {
                     setTimeout(() => {
-                        button.style.opacity = '1';
-                        button.style.transform = 'translateY(0)';
-                    }, 100);
-                }, index * 200);
-            });
-            
-            // 동기화 상태 표시
-            updateSyncStatus();
+                        button.style.opacity = '0';
+                        button.style.transform = 'translateY(30px)';
+                        button.style.transition = 'all 0.6s ease';
+                        
+                        setTimeout(() => {
+                            button.style.opacity = '1';
+                            button.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 200);
+                });
+                
+                // 동기화 상태 표시
+                setTimeout(() => {
+                    updateSyncStatus();
+                }, 1000);
+                
+                console.log('페이지 로드 완료');
+            } catch (error) {
+                console.error('페이지 로드 오류:', error);
+            }
         });
 
         function updateSyncStatus() {
-            const footer = document.querySelector('.footer');
-            if (footer) {
-                footer.innerHTML = `
-                    <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
-                    <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
-                        🌐 다중 기기 실시간 동기화 활성화됨
-                    </p>
-                    <div style="margin-top: 8px;">
-                        <span style="display: inline-block; width: 6px; height: 6px; background: #28a745; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite;"></span>
-                        <span style="font-size: 0.7em; color: #666;">마지막 동기화: ${new Date(lastSyncTime || Date.now()).toLocaleTimeString()}</span>
-                    </div>
-                `;
+            try {
+                const footer = document.querySelector('.footer');
+                if (footer) {
+                    footer.innerHTML = `
+                        <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
+                        <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
+                            🌐 다중 기기 실시간 동기화 활성화됨
+                        </p>
+                        <div style="margin-top: 8px;">
+                            <span style="display: inline-block; width: 6px; height: 6px; background: #28a745; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite;"></span>
+                            <span style="font-size: 0.7em; color: #666;">마지막 동기화: ${new Date(lastSyncTime || Date.now()).toLocaleTimeString()}</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('동기화 상태 업데이트 오류:', error);
             }
         }
 
-        // 디버깅 함수들 (전역 접근 가능)
+        // 디버깅 함수들 (전역 접근 가능) - 안전성 강화
         window.forceSyncNow = function() {
-            console.log('강제 동기화 실행...');
-            const updated = syncFromCloud();
-            if (updated) {
-                alert('새로운 데이터를 가져왔습니다!');
-                updateSyncStatus();
-            } else {
-                alert('이미 최신 데이터입니다.');
+            try {
+                console.log('강제 동기화 실행...');
+                const updated = syncFromCloud();
+                if (updated) {
+                    alert('새로운 데이터를 가져왔습니다!');
+                    updateSyncStatus();
+                } else {
+                    alert('이미 최신 데이터입니다.');
+                }
+            } catch (error) {
+                console.error('강제 동기화 오류:', error);
+                alert('동기화 중 오류가 발생했습니다.');
             }
         };
 
         window.clearAllData = function() {
-            if (confirm('모든 데이터를 삭제하시겠습니까? (모든 기기에서 삭제됩니다)')) {
-                localStorage.removeItem('weddingChecklist');
-                localStorage.removeItem('weddingBudget');
-                localStorage.removeItem(CLOUD_STORAGE_KEY);
-                location.reload();
+            try {
+                if (confirm('모든 데이터를 삭제하시겠습니까? (모든 기기에서 삭제됩니다)')) {
+                    localStorage.removeItem('weddingChecklist');
+                    localStorage.removeItem('weddingBudget');
+                    localStorage.removeItem(CLOUD_STORAGE_KEY);
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('데이터 삭제 오류:', error);
             }
         };
 
         window.checkSyncStatus = function() {
-            console.log('=== 동기화 상태 ===');
-            console.log('마지막 동기화:', new Date(lastSyncTime).toLocaleString());
-            console.log('세션 ID:', getSessionId());
-            console.log('체크리스트 항목:', Object.keys(checklistData).length);
-            console.log('예산 카테고리:', budgetItems.length);
-            
-            const cloudData = loadFromCloud();
-            if (cloudData) {
-                console.log('클라우드 데이터 시간:', new Date(cloudData.timestamp).toLocaleString());
-                console.log('시간 차이:', (Date.now() - cloudData.timestamp) / 1000, '초');
+            try {
+                console.log('=== 동기화 상태 ===');
+                console.log('마지막 동기화:', new Date(lastSyncTime).toLocaleString());
+                console.log('세션 ID:', getSessionId());
+                console.log('체크리스트 항목:', Object.keys(checklistData).length);
+                console.log('예산 카테고리:', budgetItems.length);
+                
+                const cloudData = loadFromCloud();
+                if (cloudData) {
+                    console.log('클라우드 데이터 시간:', new Date(cloudData.timestamp).toLocaleString());
+                    console.log('시간 차이:', (Date.now() - cloudData.timestamp) / 1000, '초');
+                }
+            } catch (error) {
+                console.error('상태 확인 오류:', error);
             }
         };
 
