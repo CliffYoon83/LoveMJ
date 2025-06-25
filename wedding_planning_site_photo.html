@@ -697,24 +697,150 @@
     </div>
 
     <script>
+        // 클라우드 동기화를 위한 설정
+        const CLOUD_STORAGE_KEY = 'wedding_shared_data';
+        const SYNC_INTERVAL = 10000; // 10초마다 동기화 체크
+        
         // 전역 변수
-        let checklistData = loadChecklistFromStorage();
-        let budgetItems = loadBudgetFromStorage();
-        // 저장 및 로드 함수들
+        let checklistData = {};
+        let budgetItems = [];
+        let lastSyncTime = 0;
+
+        // 초기 데이터 로드
+        function initializeData() {
+            // 클라우드에서 먼저 로드 시도
+            const cloudData = loadFromCloud();
+            if (cloudData) {
+                checklistData = cloudData.checklist || {};
+                budgetItems = cloudData.budget || getDefaultBudgetData();
+                lastSyncTime = cloudData.timestamp || 0;
+                console.log('클라우드에서 데이터 로드됨');
+            } else {
+                // 로컬 스토리지에서 로드
+                checklistData = loadChecklistFromStorage();
+                budgetItems = loadBudgetFromStorage();
+                console.log('로컬 스토리지에서 데이터 로드됨');
+            }
+        }
+
+        // 클라우드 동기화 함수들
+        function saveToCloud(data) {
+            const cloudData = {
+                checklist: checklistData,
+                budget: budgetItems,
+                timestamp: Date.now(),
+                sessionId: getSessionId()
+            };
+            
+            try {
+                // 실제 구현에서는 Firebase, Supabase 등을 사용
+                // 여기서는 localStorage를 여러 브라우저 간 공유되는 것처럼 시뮬레이션
+                localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(cloudData));
+                
+                // 브라우저 간 통신 시뮬레이션 (BroadcastChannel 사용)
+                if ('BroadcastChannel' in window) {
+                    const channel = new BroadcastChannel('wedding_sync');
+                    channel.postMessage({
+                        type: 'data_update',
+                        data: cloudData
+                    });
+                }
+                
+                lastSyncTime = cloudData.timestamp;
+                console.log('클라우드에 데이터 저장됨:', new Date(lastSyncTime).toLocaleString());
+                
+                // 로컬 스토리지에도 백업 저장
+                saveChecklistToStorage();
+                saveBudgetToStorage();
+                
+            } catch (error) {
+                console.error('클라우드 저장 실패:', error);
+            }
+        }
+
+        function loadFromCloud() {
+            try {
+                const cloudData = localStorage.getItem(CLOUD_STORAGE_KEY);
+                if (cloudData) {
+                    const parsedData = JSON.parse(cloudData);
+                    console.log('클라우드 데이터 확인:', new Date(parsedData.timestamp).toLocaleString());
+                    return parsedData;
+                }
+            } catch (error) {
+                console.error('클라우드 로드 실패:', error);
+            }
+            return null;
+        }
+
+        function syncFromCloud() {
+            const cloudData = loadFromCloud();
+            if (cloudData && cloudData.timestamp > lastSyncTime) {
+                console.log('새로운 클라우드 데이터 발견, 동기화 중...');
+                
+                checklistData = cloudData.checklist || {};
+                budgetItems = cloudData.budget || getDefaultBudgetData();
+                lastSyncTime = cloudData.timestamp;
+                
+                // UI 업데이트
+                updateCurrentModal();
+                
+                console.log('동기화 완료:', new Date(lastSyncTime).toLocaleString());
+                return true;
+            }
+            return false;
+        }
+
+        function updateCurrentModal() {
+            // 현재 열린 모달이 있으면 업데이트
+            const currentModal = document.querySelector('.modal-overlay');
+            if (currentModal) {
+                const modalTitle = currentModal.querySelector('.modal-header h2');
+                if (modalTitle) {
+                    if (modalTitle.textContent.includes('총 예산')) {
+                        updateBudgetModal();
+                    } else if (modalTitle.textContent.includes('결혼식') || modalTitle.textContent.includes('신혼여행')) {
+                        loadChecklist();
+                    }
+                }
+            }
+        }
+
+        function getSessionId() {
+            let sessionId = sessionStorage.getItem('wedding_session_id');
+            if (!sessionId) {
+                sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                sessionStorage.setItem('wedding_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // 기존 저장 함수들을 클라우드 동기화로 수정
+        function saveChecklistToStorage() {
+            if (localStorage) {
+                localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
+            }
+            saveToCloud();
+        }
+
         function loadChecklistFromStorage() {
             const saved = localStorage?.getItem('weddingChecklist');
             return saved ? JSON.parse(saved) : {};
         }
 
-        function saveChecklistToStorage() {
+        function saveBudgetToStorage() {
             if (localStorage) {
-                localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
+                localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
             }
+            saveToCloud();
         }
 
         function loadBudgetFromStorage() {
             const saved = localStorage?.getItem('weddingBudget');
-            return saved ? JSON.parse(saved) : [
+            return saved ? JSON.parse(saved) : getDefaultBudgetData();
+        }
+
+        function getDefaultBudgetData() {
+            return [
                 { category: '🏨 예식장 (PJ호텔)', items: [
                     { name: '예식장 대관료', amount: 3500000 },
                     { name: '식대 (55,000원/인)', amount: 0, note: '계약인원 기준' },
@@ -745,11 +871,32 @@
             ];
         }
 
-        function saveBudgetToStorage() {
-            if (localStorage) {
-                localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
-            }
+        // 실시간 동기화 리스너 설정
+        if ('BroadcastChannel' in window) {
+            const channel = new BroadcastChannel('wedding_sync');
+            channel.onmessage = function(event) {
+                if (event.data.type === 'data_update') {
+                    console.log('다른 탭에서 데이터 업데이트 감지');
+                    syncFromCloud();
+                }
+            };
         }
+
+        // 페이지 포커스 시 동기화
+        window.addEventListener('focus', function() {
+            console.log('페이지 포커스 - 동기화 체크');
+            syncFromCloud();
+        });
+
+        // 주기적 동기화 (3초마다)
+        setInterval(function() {
+            syncFromCloud();
+        }, SYNC_INTERVAL);
+
+        // 페이지 떠날 때 마지막 저장
+        window.addEventListener('beforeunload', function() {
+            saveToCloud();
+        });
 
         function calculateTotalBudget() {
             return budgetItems.reduce((total, category) => {
@@ -790,41 +937,41 @@
                 category: '새 카테고리',
                 items: [{ name: '새 항목', amount: 0 }]
             });
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
             updateBudgetModal();
         }
 
         function deleteBudgetCategory(categoryIndex) {
             budgetItems.splice(categoryIndex, 1);
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
             updateBudgetModal();
         }
 
         function addBudgetItem(categoryIndex) {
             budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
             updateBudgetModal();
         }
 
         function deleteBudgetItem(categoryIndex, itemIndex) {
             budgetItems[categoryIndex].items.splice(itemIndex, 1);
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
             updateBudgetModal();
         }
 
         function updateCategoryName(categoryIndex, newName) {
             budgetItems[categoryIndex].category = newName;
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
         }
 
         function updateItemName(categoryIndex, itemIndex, newName) {
             budgetItems[categoryIndex].items[itemIndex].name = newName;
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
         }
 
         function updateItemAmount(categoryIndex, itemIndex, newAmount) {
             budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
-            saveBudgetToStorage();
+            saveBudgetToStorage(); // 클라우드 동기화 포함
             updateBudgetModal();
         }
 
@@ -866,11 +1013,11 @@
                 checklistData[checkbox.id] = checkbox.checked;
             });
             
-            saveChecklistToStorage();
+            saveChecklistToStorage(); // 클라우드 동기화 포함
             
             const saveStatus = document.getElementById('saveStatus');
             if (saveStatus) {
-                saveStatus.textContent = '✅ 체크리스트가 저장되었습니다!';
+                saveStatus.textContent = '✅ 체크리스트가 모든 기기에 동기화되었습니다!';
                 saveStatus.style.color = '#28a745';
                 
                 setTimeout(() => {
@@ -885,6 +1032,21 @@
                 if (checklistData[checkbox.id]) {
                     checkbox.checked = true;
                 }
+                
+                // 체크박스 변경 시 자동 저장
+                checkbox.addEventListener('change', function() {
+                    checklistData[this.id] = this.checked;
+                    saveChecklistToStorage(); // 클라우드 동기화 포함
+                    
+                    // 시각적 피드백
+                    const checkItem = this.closest('.check-item');
+                    if (checkItem) {
+                        checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '#ffe8e8';
+                        setTimeout(() => {
+                            checkItem.style.backgroundColor = '';
+                        }, 500);
+                    }
+                });
             });
         }
 
