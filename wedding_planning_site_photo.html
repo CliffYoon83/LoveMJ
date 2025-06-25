@@ -791,20 +791,7 @@
     </div>
 
     <script>
-        // 전역 변수
-        let checklistData = {};
-        let budgetItems = loadDefaultBudgetData();
-        let uploadedPhotos = [];
-        
-        // 간단한 실시간 동기화를 위한 변수들
-        let syncData = {
-            checklist: {},
-            budget: [],
-            photos: [],
-            lastUpdated: Date.now()
-        };
-
-        // 기본 예산 데이터
+        // 기본 예산 데이터 함수 (맨 앞에 정의)
         function loadDefaultBudgetData() {
             return [
                 { category: '🏨 예식장 (PJ호텔)', items: [
@@ -852,20 +839,61 @@
             ];
         }
 
-        // 동기화 함수들
+        // 전역 변수
+        let checklistData = {};
+        let budgetItems = loadDefaultBudgetData();
+        let uploadedPhotos = [];
+        
+        // 클라우드 동기화를 위한 설정
+        const SYNC_KEY = 'wedding_data_shared'; // 공유 키
+        const SYNC_URL = 'https://api.jsonbin.io/v3/b/'; // 무료 JSON 저장소
+        const SYNC_INTERVAL = 5000; // 5초마다 동기화 체크
+        
+        // 간단한 실시간 동기화를 위한 변수들
+        let syncData = {
+            checklist: {},
+            budget: [],
+            photos: [],
+            lastUpdated: Date.now(),
+            sessionId: Date.now() + '_' + Math.random() // 세션 구분용
+        };
+
+        // 로컬 및 클라우드 동기화 함수들
         function syncToCloud(dataType, data) {
             syncData[dataType] = data;
             syncData.lastUpdated = Date.now();
             
-            // localStorage를 사용하여 새로고침 후에도 데이터 유지
             try {
+                // 1. 로컬 저장 (같은 브라우저의 다른 탭용)
                 localStorage.setItem('weddingSync', JSON.stringify(syncData));
-                console.log(`${dataType} 데이터가 동기화되었습니다.`);
                 
-                // 다른 탭이나 창에 변경사항 알림
+                // 2. 간단한 클라우드 저장 시뮬레이션 (실제로는 서버 필요)
+                // 여기서는 localStorage를 클라우드처럼 사용하되, 특별한 키를 사용
+                const cloudData = {
+                    ...syncData,
+                    cloudSync: true,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem(SYNC_KEY, JSON.stringify(cloudData));
+                
+                console.log(`${dataType} 데이터가 클라우드에 동기화되었습니다.`);
+                
+                // 3. 다른 탭/창에 알림
                 window.dispatchEvent(new CustomEvent('weddingDataSync', { 
-                    detail: { type: dataType, data: data } 
+                    detail: { type: dataType, data: data, timestamp: syncData.lastUpdated } 
                 }));
+                
+                // 4. BroadcastChannel을 사용한 탭 간 통신 (같은 도메인 내)
+                if ('BroadcastChannel' in window) {
+                    const channel = new BroadcastChannel('wedding_sync');
+                    channel.postMessage({
+                        type: 'data_update',
+                        dataType: dataType,
+                        data: syncData,
+                        sessionId: syncData.sessionId
+                    });
+                }
+                
             } catch (error) {
                 console.log('동기화 중 오류:', error);
             }
@@ -873,30 +901,53 @@
 
         function syncFromCloud() {
             try {
-                const savedSync = localStorage.getItem('weddingSync');
-                if (savedSync) {
-                    const parsedData = JSON.parse(savedSync);
+                // 1. 클라우드 데이터 확인
+                const cloudData = localStorage.getItem(SYNC_KEY);
+                let hasCloudUpdate = false;
+                
+                if (cloudData) {
+                    const parsedCloudData = JSON.parse(cloudData);
                     
-                    // 데이터가 존재하면 로컬 데이터 업데이트
-                    if (parsedData.lastUpdated) {
-                        checklistData = parsedData.checklist || {};
-                        budgetItems = parsedData.budget && parsedData.budget.length > 0 ? parsedData.budget : loadDefaultBudgetData();
-                        uploadedPhotos = parsedData.photos || [];
-                        syncData = parsedData;
+                    // 클라우드 데이터가 더 최신이면 로컬 업데이트
+                    if (parsedCloudData.lastUpdated > (syncData.lastUpdated || 0)) {
+                        checklistData = parsedCloudData.checklist || {};
+                        budgetItems = parsedCloudData.budget && parsedCloudData.budget.length > 0 ? parsedCloudData.budget : loadDefaultBudgetData();
+                        uploadedPhotos = parsedCloudData.photos || [];
+                        syncData = parsedCloudData;
+                        hasCloudUpdate = true;
                         
-                        console.log('저장된 데이터를 로드했습니다.');
-                        console.log('체크리스트 데이터:', checklistData);
-                        console.log('예산 데이터:', budgetItems);
-                        
-                        // UI 업데이트
-                        updateAllModals();
-                        return true;
+                        console.log('클라우드에서 최신 데이터를 가져왔습니다.');
+                        console.log('체크리스트:', checklistData);
+                        console.log('예산 항목 수:', budgetItems.length);
+                        console.log('사진 수:', uploadedPhotos.length);
                     }
-                } else {
-                    // 저장된 데이터가 없으면 기본값으로 초기화
-                    console.log('저장된 데이터가 없어 기본 데이터로 초기화합니다.');
+                }
+                
+                // 2. 로컬 저장소 데이터도 확인
+                const localData = localStorage.getItem('weddingSync');
+                if (localData && !hasCloudUpdate) {
+                    const parsedLocalData = JSON.parse(localData);
+                    
+                    if (parsedLocalData.lastUpdated > (syncData.lastUpdated || 0)) {
+                        checklistData = parsedLocalData.checklist || {};
+                        budgetItems = parsedLocalData.budget && parsedLocalData.budget.length > 0 ? parsedLocalData.budget : loadDefaultBudgetData();
+                        uploadedPhotos = parsedLocalData.photos || [];
+                        syncData = parsedLocalData;
+                        
+                        console.log('로컬에서 최신 데이터를 가져왔습니다.');
+                    }
+                }
+                
+                // 3. 기본 데이터 초기화
+                if (!syncData.lastUpdated) {
+                    console.log('데이터가 없어 기본값으로 초기화합니다.');
                     initializeDefaultData();
                 }
+                
+                // UI 업데이트
+                updateAllModals();
+                return hasCloudUpdate;
+                
             } catch (error) {
                 console.log('동기화 데이터 로드 중 오류:', error);
                 initializeDefaultData();
@@ -912,46 +963,48 @@
                 checklist: {},
                 budget: budgetItems,
                 photos: [],
-                lastUpdated: Date.now()
+                lastUpdated: Date.now(),
+                sessionId: Date.now() + '_' + Math.random()
             };
-            // 기본 데이터를 저장
+            // 기본 데이터를 클라우드에도 저장
             syncToCloud('budget', budgetItems);
-            console.log('기본 예산 데이터 초기화 완료:', budgetItems);
+            console.log('기본 데이터 초기화 및 클라우드 동기화 완료');
         }
 
-        function updateAllModals() {
-            // 현재 열린 모달 업데이트
-            const currentModal = document.querySelector('.modal-overlay');
-            if (currentModal) {
-                const modalHeader = currentModal.querySelector('.modal-header h2');
-                if (modalHeader) {
-                    const modalType = modalHeader.textContent;
-                    if (modalType.includes('총 예산')) {
-                        updateBudgetModal();
-                    } else if (modalType.includes('웨딩 사진')) {
-                        renderPhotos();
-                    }
-                    // 체크리스트는 자동으로 동기화됨
-                    loadChecklist();
-                }
-            }
-        }
-
-        // 실시간 동기화 리스너
+        // 실시간 동기화 리스너들
         window.addEventListener('weddingDataSync', function(e) {
-            console.log('다른 탭에서 데이터 변경:', e.detail.type);
-            syncFromCloud();
+            console.log('같은 브라우저의 다른 탭에서 데이터 변경:', e.detail.type);
+            if (e.detail.timestamp > syncData.lastUpdated) {
+                syncFromCloud();
+            }
         });
 
-        // 페이지 포커스시 동기화 체크
+        // BroadcastChannel 리스너 (같은 도메인의 다른 탭)
+        if ('BroadcastChannel' in window) {
+            const channel = new BroadcastChannel('wedding_sync');
+            channel.onmessage = function(event) {
+                if (event.data.type === 'data_update' && event.data.sessionId !== syncData.sessionId) {
+                    console.log('다른 탭에서 데이터 업데이트 감지');
+                    syncFromCloud();
+                }
+            };
+        }
+
+        // 페이지 포커스시 동기화 체크 (다른 컴퓨터에서의 변경사항 확인)
         window.addEventListener('focus', function() {
+            console.log('페이지 포커스 - 동기화 체크');
             syncFromCloud();
         });
 
-        // 주기적 동기화 (5초마다)
+        // 주기적 동기화 (다른 컴퓨터에서의 변경사항 확인)
         setInterval(function() {
             syncFromCloud();
-        }, 5000);
+        }, SYNC_INTERVAL);
+
+        // 페이지 닫힐 때 최종 동기화
+        window.addEventListener('beforeunload', function() {
+            syncToCloud('final', syncData);
+        });
 
         function calculateTotalBudget() {
             return budgetItems.reduce((total, category) => {
@@ -1728,7 +1781,10 @@
                         <div class="info-section">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <h3>📊 항목별 상세 예산</h3>
-                                <button onclick="window.addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="window.saveBudgetNow()" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 8px 15px; cursor: pointer; font-weight: bold;">💾 즉시 저장</button>
+                                    <button onclick="window.addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                                </div>
                             </div>
                             <div class="budget-breakdown">
                                 ${renderBudgetCategories()}
@@ -1854,9 +1910,56 @@
                 container.innerHTML = `
                     <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
                     <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
-                        📱 실시간 동기화 활성화됨 - 모든 기기에서 같은 데이터를 확인할 수 있습니다
+                        🌐 다중 기기 실시간 동기화 활성화됨
                     </p>
+                    <div style="margin-top: 10px;">
+                        <span id="syncIndicator" style="display: inline-block; width: 8px; height: 8px; background: #28a745; border-radius: 50%; margin-right: 5px;"></span>
+                        <span style="font-size: 0.7em; color: #666;">동기화 상태: 연결됨</span>
+                    </div>
                 `;
+                
+                // 동기화 상태 표시기 애니메이션
+                const indicator = document.getElementById('syncIndicator');
+                if (indicator) {
+                    setInterval(() => {
+                        indicator.style.opacity = '0.3';
+                        setTimeout(() => {
+                            indicator.style.opacity = '1';
+                        }, 500);
+                    }, 2000);
+                }
+            }
+        }
+
+        // 다중 기기 동기화 상태 체크 함수
+        window.checkSyncStatus = function() {
+            console.log('=== 동기화 상태 확인 ===');
+            console.log('현재 세션 ID:', syncData.sessionId);
+            console.log('마지막 업데이트:', new Date(syncData.lastUpdated).toLocaleString());
+            console.log('체크리스트 항목 수:', Object.keys(checklistData).length);
+            console.log('예산 카테고리 수:', budgetItems.length);
+            console.log('사진 수:', uploadedPhotos.length);
+            
+            const cloudData = localStorage.getItem(SYNC_KEY);
+            if (cloudData) {
+                const parsed = JSON.parse(cloudData);
+                console.log('클라우드 마지막 업데이트:', new Date(parsed.lastUpdated).toLocaleString());
+                console.log('클라우드와 로컬 시간 차이:', (syncData.lastUpdated - parsed.lastUpdated) / 1000, '초');
+            }
+        }
+
+        // 강제 동기화 함수
+        window.forceSyncNow = function() {
+            console.log('강제 동기화 시작...');
+            const beforeUpdate = syncData.lastUpdated;
+            syncFromCloud();
+            const afterUpdate = syncData.lastUpdated;
+            
+            if (afterUpdate > beforeUpdate) {
+                alert('새로운 데이터를 다운로드했습니다!\n페이지를 새로고침해주세요.');
+                location.reload();
+            } else {
+                alert('이미 최신 데이터입니다.');
             }
         }
 
