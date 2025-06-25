@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리의 결혼 준비 (GitHub Gist 동기화)</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #444;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .heart {
+            color: #ff6b9d;
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .progress-info {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .buttons-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .planning-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .planning-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .wedding-button { background: linear-gradient(45deg, #ff9a9e, #fecfef); }
+        .travel-button { background: linear-gradient(45deg, #a8edea, #fed6e3); }
+        .budget-button { background: linear-gradient(45deg, #ffecd2, #fcb69f); }
+        .photo-button { background: linear-gradient(45deg, #c3a3ff, #b794f6); }
+
+        .button-icon {
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #667eea;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: hidden;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            padding: 20px 30px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .check-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .check-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .check-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+        }
+
+        .check-item label {
+            color: #555;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .photo-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: linear-gradient(135deg, #e8eaf6 0%, #b39ddb 100%);
+        }
+
+        .setup-form {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .setup-form input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .setup-form button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .setup-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="sync-status" id="syncStatus">🔄 설정 필요</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="title">우리의 결혼 준비 <span class="heart">💕</span></h1>
+            <p class="subtitle">GitHub Gist로 무료 동기화</p>
+            <div class="progress-info">
+                <strong>완전 무료! GitHub Gist를 데이터베이스로 활용</strong>
+            </div>
+        </div>
+
+        <div class="buttons-container">
+            <button class="planning-button wedding-button" onclick="openChecklistModal()">
+                <span class="button-icon">💒</span>
+                결혼식 체크리스트
+            </button>
+
+            <button class="planning-button photo-button" onclick="openPhotoModal()">
+                <span class="button-icon">📸</span>
+                웨딩 사진 갤러리
+            </button>
+
+            <button class="planning-button travel-button" onclick="openBudgetModal()">
+                <span class="button-icon">💰</span>
+                예산 관리
+            </button>
+
+            <button class="planning-button budget-button" onclick="openSettingsModal()">
+                <span class="button-icon">⚙️</span>
+                설정
+            </button>
+        </div>
+
+        <div class="footer">
+            <p>💖 GitHub Gist로 무료 실시간 동기화 💖</p>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let currentData = {
+            checklist: {},
+            photos: [],
+            budget: [],
+            lastUpdated: Date.now()
+        };
+
+        let gistConfig = {
+            token: localStorage.getItem('github_token') || '',
+            gistId: localStorage.getItem('gist_id') || '',
+            username: localStorage.getItem('github_username') || ''
+        };
+
+        // GitHub Gist API를 통한 데이터 관리
+        class GistDatabase {
+            constructor(token, gistId) {
+                this.token = token;
+                this.gistId = gistId;
+                this.baseUrl = 'https://api.github.com';
+            }
+
+            async saveData(data) {
+                try {
+                    updateSyncStatus('saving', '저장 중...');
+                    
+                    const response = await fetch(`${this.baseUrl}/gists/${this.gistId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            files: {
+                                'wedding-data.json': {
+                                    content: JSON.stringify(data, null, 2)
+                                }
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        updateSyncStatus('saved', '저장 완료');
+                        setTimeout(() => {
+                            updateSyncStatus('connected', '동기화 활성화');
+                        }, 2000);
+                        return true;
+                    } else {
+                        throw new Error('Gist 업데이트 실패');
+                    }
+                } catch (error) {
+                    console.error('저장 실패:', error);
+                    updateSyncStatus('error', '저장 실패');
+                    return false;
+                }
+            }
+
+            async loadData() {
+                try {
+                    updateSyncStatus('connecting', '데이터 로드 중...');
+                    
+                    const response = await fetch(`${this.baseUrl}/gists/${this.gistId}`, {
+                        headers: {
+                            'Authorization': `token ${this.token}`,
+                        }
+                    });
+
+                    if (response.ok) {
+                        const gist = await response.json();
+                        const fileContent = gist.files['wedding-data.json'];
+                        
+                        if (fileContent) {
+                            const data = JSON.parse(fileContent.content);
+                            updateSyncStatus('connected', '동기화 활성화');
+                            return data;
+                        }
+                    }
+                    
+                    throw new Error('데이터 로드 실패');
+                } catch (error) {
+                    console.error('로드 실패:', error);
+                    updateSyncStatus('error', '로드 실패');
+                    return null;
+                }
+            }
+
+            async createGist(initialData) {
+                try {
+                    const response = await fetch(`${this.baseUrl}/gists`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            description: '웨딩 계획 데이터',
+                            public: false,
+                            files: {
+                                'wedding-data.json': {
+                                    content: JSON.stringify(initialData, null, 2)
+                                }
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        const gist = await response.json();
+                        return gist.id;
+                    }
+                    
+                    throw new Error('Gist 생성 실패');
+                } catch (error) {
+                    console.error('Gist 생성 실패:', error);
+                    return null;
+                }
+            }
+        }
+
+        let gistDB = null;
+
+        // 동기화 상태 표시
+        function updateSyncStatus(status, message) {
+            const syncStatus = document.getElementById('syncStatus');
+            const statusIcons = {
+                connecting: '🔄',
+                connected: '✅',
+                error: '❌',
+                saving: '💾',
+                saved: '✅',
+                setup: '⚙️'
+            };
+            
+            syncStatus.innerHTML = `${statusIcons[status]} ${message}`;
+            syncStatus.style.background = status === 'error' ? 'rgba(255, 182, 193, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+        }
+
+        // 초기화
+        async function initializeGist() {
+            if (!gistConfig.token || !gistConfig.gistId) {
+                updateSyncStatus('setup', '설정 필요');
+                return;
+            }
+
+            gistDB = new GistDatabase(gistConfig.token, gistConfig.gistId);
+            
+            const data = await gistDB.loadData();
+            if (data) {
+                currentData = { ...currentData, ...data };
+                updateAllUI();
+                startPeriodicSync();
+            }
+        }
+
+        // 주기적 동기화 (30초마다)
+        function startPeriodicSync() {
+            setInterval(async () => {
+                if (gistDB) {
+                    const data = await gistDB.loadData();
+                    if (data && data.lastUpdated > currentData.lastUpdated) {
+                        currentData = { ...currentData, ...data };
+                        updateAllUI();
+                    }
+                }
+            }, 30000);
+        }
+
+        // 데이터 저장
+        async function saveData() {
+            if (gistDB) {
+                currentData.lastUpdated = Date.now();
+                await gistDB.saveData(currentData);
+            }
+        }
+
+        // 체크리스트 업데이트
+        function updateChecklist(checkboxId, checked) {
+            currentData.checklist[checkboxId] = checked;
+            saveData();
+        }
+
+        // 사진 업로드 (Base64)
+        function uploadPhoto(file) {
+            if (file.size > 1024 * 1024) { // 1MB 제한
+                alert('사진 크기는 1MB 이하로 해주세요.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    data: e.target.result,
+                    name: file.name,
+                    size: file.size,
+                    uploadedAt: new Date().toLocaleString()
+                };
+                
+                currentData.photos.push(photoData);
+                saveData();
+                renderPhotos();
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // UI 업데이트
+        function updateAllUI() {
+            // 체크박스 상태 업데이트
+            Object.keys(currentData.checklist).forEach(checkboxId => {
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) {
+                    checkbox.checked = currentData.checklist[checkboxId];
+                }
+            });
+            
+            // 사진 갤러리 업데이트
+            const photoGallery = document.getElementById('photoGallery');
+            if (photoGallery) {
+                renderPhotos();
+            }
+        }
+
+        // 사진 갤러리 렌더링
+        function renderPhotos() {
+            const photoGallery = document.getElementById('photoGallery');
+            if (!photoGallery) return;
+            
+            if (currentData.photos.length === 0) {
+                photoGallery.innerHTML = '<p style="text-align: center; color: #666;">아직 업로드된 사진이 없습니다.</p>';
+                return;
+            }
+            
+            photoGallery.innerHTML = currentData.photos.map(photo => `
+                <div class="photo-item">
+                    <img src="${photo.data}" alt="${photo.name}" onclick="openImageModal('${photo.data}')">
+                    <div style="padding: 10px; background: white; text-align: center;">
+                        <small>${photo.name}</small><br>
+                        <small style="color: #888;">${photo.uploadedAt}</small>
+                        <button onclick="deletePhoto('${photo.id}')" style="background: #ff4757; color: white; border: none; border-radius: 3px; padding: 3px 8px; margin-left: 10px; cursor: pointer; font-size: 11px;">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 사진 삭제
+        function deletePhoto(photoId) {
+            if (confirm('이 사진을 삭제하시겠습니까?')) {
+                currentData.photos = currentData.photos.filter(photo => photo.id != photoId);
+                saveData();
+                renderPhotos();
+            }
+        }
+
+        // 모달 함수들
+        function openChecklistModal() {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 
