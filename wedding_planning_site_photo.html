@@ -814,14 +814,16 @@
                     { name: '본식스냅 (원판 10p 2권+합본 30p 1권)', amount: 0, note: '포함' }
                 ]},
                 { category: '📸 스튜디오 (로이스튜디오)', items: [
-                    { name: '세미토탈, 16R액자, 원본전라벨', amount: 2130000 }
-                ]},
-                { category: '👗 드레스 & 메이크업', items: [
-                    { name: '드레스 (위드브라이드)', amount: 0, note: '포함' },
-                    { name: '메이크업 (메이븐)', amount: 11788000 },
-                    { name: '헬퍼비', amount: 450000 },
+                    { name: '세미토탈, 16R액자, 원본전라벨', amount: 2130000 },
+                    { name: '헬퍼비', amount: 150000 },
                     { name: '헤어변형', amount: 220000 },
                     { name: '원본수정본', amount: 220000 }
+                ]},
+                { category: '👗 드레스 & 메이크업 (위드브라이드/메이븐)', items: [
+                    { name: '드레스 (위드브라이드)', amount: 0, note: '포함' },
+                    { name: '메이크업 (메이븐)', amount: 11788000 },
+                    { name: '헬퍼비', amount: 300000 },
+                    { name: '야간수당', amount: 50000 }
                 ]},
                 { category: '🎵 음향 & 촬영', items: [
                     { name: '촬영', amount: 430000 },
@@ -833,6 +835,19 @@
                 ]},
                 { category: '💎 예물', items: [
                     { name: '예물', amount: 2120000 }
+                ]},
+                { category: '👘 혼주 예복', items: [
+                    { name: '혼주한복 (우리옷길쌈) 2벌', amount: 660000 },
+                    { name: '턱시도', amount: 820000 }
+                ]},
+                { category: '📋 추가 준비사항', items: [
+                    { name: '청첩장 + 식권 제작', amount: 0, note: '미정' },
+                    { name: '스튜디오 사진 보정', amount: 0, note: '네이버' },
+                    { name: '식전영상 제작', amount: 0, note: '미정' },
+                    { name: '웨딩 사진 앨범 제작', amount: 0, note: '미정' },
+                    { name: '신부 피부관리', amount: 0, note: '미정' },
+                    { name: '답례품', amount: 0, note: '미정' },
+                    { name: '양가인사 선물', amount: 0, note: '미정' }
                 ]}
             ];
         }
@@ -842,10 +857,9 @@
             syncData[dataType] = data;
             syncData.lastUpdated = Date.now();
             
-            // 실제 구현에서는 여기서 서버로 데이터를 전송합니다
-            // 지금은 브라우저의 sessionStorage를 공유 저장소처럼 사용
+            // localStorage를 사용하여 새로고침 후에도 데이터 유지
             try {
-                sessionStorage.setItem('weddingSync', JSON.stringify(syncData));
+                localStorage.setItem('weddingSync', JSON.stringify(syncData));
                 console.log(`${dataType} 데이터가 동기화되었습니다.`);
                 
                 // 다른 탭이나 창에 변경사항 알림
@@ -859,29 +873,50 @@
 
         function syncFromCloud() {
             try {
-                const savedSync = sessionStorage.getItem('weddingSync');
+                const savedSync = localStorage.getItem('weddingSync');
                 if (savedSync) {
                     const parsedData = JSON.parse(savedSync);
                     
-                    // 데이터가 더 최신이면 로컬 데이터 업데이트
-                    if (parsedData.lastUpdated > (syncData.lastUpdated || 0)) {
+                    // 데이터가 존재하면 로컬 데이터 업데이트
+                    if (parsedData.lastUpdated) {
                         checklistData = parsedData.checklist || {};
-                        budgetItems = parsedData.budget || loadDefaultBudgetData();
+                        budgetItems = parsedData.budget && parsedData.budget.length > 0 ? parsedData.budget : loadDefaultBudgetData();
                         uploadedPhotos = parsedData.photos || [];
                         syncData = parsedData;
                         
-                        console.log('클라우드에서 최신 데이터를 가져왔습니다.');
+                        console.log('저장된 데이터를 로드했습니다.');
                         console.log('체크리스트 데이터:', checklistData);
+                        console.log('예산 데이터:', budgetItems);
                         
                         // UI 업데이트
                         updateAllModals();
                         return true;
                     }
+                } else {
+                    // 저장된 데이터가 없으면 기본값으로 초기화
+                    console.log('저장된 데이터가 없어 기본 데이터로 초기화합니다.');
+                    initializeDefaultData();
                 }
             } catch (error) {
                 console.log('동기화 데이터 로드 중 오류:', error);
+                initializeDefaultData();
             }
             return false;
+        }
+
+        function initializeDefaultData() {
+            checklistData = {};
+            budgetItems = loadDefaultBudgetData();
+            uploadedPhotos = [];
+            syncData = {
+                checklist: {},
+                budget: budgetItems,
+                photos: [],
+                lastUpdated: Date.now()
+            };
+            // 기본 데이터를 저장
+            syncToCloud('budget', budgetItems);
+            console.log('기본 예산 데이터 초기화 완료:', budgetItems);
         }
 
         function updateAllModals() {
@@ -1047,31 +1082,54 @@
         }
 
         function loadChecklist() {
-            // 최신 동기화 데이터 먼저 로드
-            syncFromCloud();
+            // 모달이 열릴 때마다 최신 데이터 로드
+            console.log('체크리스트 로드 시작');
             
-            const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (checklistData[checkbox.id]) {
-                    checkbox.checked = true;
-                }
+            // 0.5초 후에 체크박스에 이벤트 리스너 추가 (DOM이 완전히 로드된 후)
+            setTimeout(() => {
+                const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+                console.log('찾은 체크박스 수:', checkboxes.length);
+                console.log('현재 체크리스트 데이터:', checklistData);
                 
-                // 체크박스 변경 시 자동 저장 이벤트 추가
-                checkbox.addEventListener('change', function() {
-                    console.log('Checkbox changed:', this.id, this.checked);
-                    checklistData[this.id] = this.checked;
-                    syncToCloud('checklist', checklistData);
-                    
-                    // 시각적 피드백
-                    const checkItem = this.closest('.check-item');
-                    if (checkItem) {
-                        checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '';
-                        setTimeout(() => {
-                            checkItem.style.backgroundColor = '';
-                        }, 500);
+                checkboxes.forEach(checkbox => {
+                    // 저장된 상태 복원
+                    if (checklistData[checkbox.id]) {
+                        checkbox.checked = true;
+                        console.log('체크박스 복원:', checkbox.id, 'checked');
                     }
+                    
+                    // 기존 이벤트 리스너 제거 후 새로 추가
+                    checkbox.removeEventListener('change', handleCheckboxChange);
+                    checkbox.addEventListener('change', handleCheckboxChange);
                 });
-            });
+            }, 500);
+        }
+
+        function handleCheckboxChange(event) {
+            const checkbox = event.target;
+            console.log('체크박스 변경:', checkbox.id, checkbox.checked);
+            
+            checklistData[checkbox.id] = checkbox.checked;
+            syncToCloud('checklist', checklistData);
+            
+            // 시각적 피드백
+            const checkItem = checkbox.closest('.check-item');
+            if (checkItem) {
+                checkItem.style.backgroundColor = checkbox.checked ? '#e8f5e8' : '#ffe8e8';
+                setTimeout(() => {
+                    checkItem.style.backgroundColor = '';
+                }, 800);
+            }
+            
+            // 즉시 저장 상태 표시
+            const saveStatus = document.getElementById('saveStatus');
+            if (saveStatus) {
+                saveStatus.textContent = '✅ 자동 저장됨!';
+                saveStatus.style.color = '#28a745';
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                }, 2000);
+            }
         }
 
         // 사진 업로드 관련 함수들
@@ -1443,8 +1501,8 @@
                                     <label for="seat-reservation">하루 전날 좌석 예약하기</label>
                                 </div>
                                 <div class="check-item">
-                                    <input type="checkbox" id="travel-payment">
-                                    <label for="travel-payment">여행사 결제 완료</label>
+                                    <input type="checkbox" id="travel-payment" checked>
+                                    <label for="travel-payment">여행사 결제 완료 ✅</label>
                                 </div>
                                 <div class="check-item">
                                     <input type="checkbox" id="esta">
@@ -1501,6 +1559,13 @@
         function openBudgetModal() {
             addClickEffect(event.target.closest('.planning-button'));
             
+            // 예산 데이터가 비어있으면 기본 데이터로 초기화
+            if (!budgetItems || budgetItems.length === 0) {
+                console.log('예산 데이터가 비어있어 기본 데이터로 초기화합니다.');
+                budgetItems = loadDefaultBudgetData();
+                syncToCloud('budget', budgetItems);
+            }
+            
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'modal-overlay';
             modalOverlay.innerHTML = `
@@ -1515,6 +1580,7 @@
                             <div class="budget-summary">
                                 <div class="total-amount">
                                     <h2 style="color: white; margin-bottom: 20px;">총 예산: ${formatCurrency(calculateTotalBudget())}</h2>
+                                    <p style="color: rgba(255,255,255,0.9); font-size: 1em;">확정 항목들의 합계입니다</p>
                                 </div>
                             </div>
                         </div>
@@ -1533,16 +1599,29 @@
                             <h3>📝 추가 준비사항</h3>
                             <div class="additional-items">
                                 <div class="additional-item">
-                                    <strong>혼주 예복</strong>
-                                    <p>• 한복 2벌: 66만원 (우리옷길쌈)</p>
-                                    <p>• 턱시도: 82만원</p>
+                                    <strong>🗓️ 중요 일정</strong>
+                                    <p>• 스튜디오 촬영: 2025.6.3 오전 7:00</p>
+                                    <p>• 드레스 피팅: 2025.9.5 오후 1:00</p>
+                                    <p>• 메이크업 리허설: 2025.10.25 오후 1시-4시</p>
                                 </div>
                                 <div class="additional-item">
-                                    <strong>기타</strong>
+                                    <strong>📋 추가 준비사항</strong>
                                     <p>• 청첩장 + 식권 제작</p>
+                                    <p>• 스튜디오 사진 보정 (네이버)</p>
+                                    <p>• 식전영상 제작</p>
+                                    <p>• 웨딩 사진 앨범 제작</p>
                                     <p>• 신부 피부관리</p>
-                                    <p>• 답례품</p>
+                                    <p>• 답례품 준비</p>
                                     <p>• 양가인사 선물</p>
+                                </div>
+                                <div class="additional-item">
+                                    <strong>🍽️ 기타 확인사항</strong>
+                                    <p>• 상견례 계획</p>
+                                    <p>• 리셉션드레스 (1달전 평일 11시-16시 방문)</p>
+                                    <p>• 리셉션드레스에 어울리는 구두 정하기</p>
+                                    <p>• 사회자대본 준비</p>
+                                    <p>• 혼인선언문 작성</p>
+                                    <p>• 축사 준비</p>
                                 </div>
                             </div>
                         </div>
