@@ -964,15 +964,19 @@
         }
 
         function renderBudgetCategories() {
+            if (!budgetItems || budgetItems.length === 0) {
+                return '<p style="text-align: center; color: #666; padding: 20px;">예산 데이터를 로드하는 중...</p>';
+            }
+            
             return budgetItems.map((category, categoryIndex) => `
                 <div class="budget-category">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 contenteditable="true" onblur="updateCategoryName(${categoryIndex}, this.textContent)">${category.category}</h4>
+                        <h4 contenteditable="true" onblur="updateCategoryName(${categoryIndex}, this.textContent)" style="cursor: text;">${category.category}</h4>
                         <button onclick="deleteBudgetCategory(${categoryIndex})" style="background: #ff4757; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">삭제</button>
                     </div>
                     ${category.items.map((item, itemIndex) => `
                         <div class="budget-item">
-                            <span contenteditable="true" onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)">${item.name}</span>
+                            <span contenteditable="true" onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)" style="cursor: text; min-width: 150px; display: inline-block;">${item.name}</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <input type="number" value="${item.amount}" onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)" 
                                        style="width: 120px; padding: 5px; border: 1px solid #ddd; border-radius: 5px;" 
@@ -987,7 +991,9 @@
             `).join('');
         }
 
-        function addBudgetCategory() {
+        // 예산 관련 함수들을 전역으로 등록
+        window.addBudgetCategory = function() {
+            console.log('새 카테고리 추가');
             budgetItems.push({
                 category: '새 카테고리',
                 items: [{ name: '새 항목', amount: 0 }]
@@ -996,50 +1002,80 @@
             updateBudgetModal();
         }
 
-        function deleteBudgetCategory(categoryIndex) {
-            budgetItems.splice(categoryIndex, 1);
-            syncToCloud('budget', budgetItems);
-            updateBudgetModal();
+        window.deleteBudgetCategory = function(categoryIndex) {
+            console.log('카테고리 삭제:', categoryIndex);
+            if (confirm('이 카테고리를 삭제하시겠습니까?')) {
+                budgetItems.splice(categoryIndex, 1);
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function addBudgetItem(categoryIndex) {
-            budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
-            syncToCloud('budget', budgetItems);
-            updateBudgetModal();
+        window.addBudgetItem = function(categoryIndex) {
+            console.log('새 항목 추가:', categoryIndex);
+            if (budgetItems[categoryIndex]) {
+                budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function deleteBudgetItem(categoryIndex, itemIndex) {
-            budgetItems[categoryIndex].items.splice(itemIndex, 1);
-            syncToCloud('budget', budgetItems);
-            updateBudgetModal();
+        window.deleteBudgetItem = function(categoryIndex, itemIndex) {
+            console.log('항목 삭제:', categoryIndex, itemIndex);
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
+                budgetItems[categoryIndex].items.splice(itemIndex, 1);
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function updateCategoryName(categoryIndex, newName) {
-            budgetItems[categoryIndex].category = newName;
-            syncToCloud('budget', budgetItems);
+        window.updateCategoryName = function(categoryIndex, newName) {
+            console.log('카테고리명 변경:', categoryIndex, newName);
+            if (budgetItems[categoryIndex] && newName.trim()) {
+                budgetItems[categoryIndex].category = newName.trim();
+                syncToCloud('budget', budgetItems);
+            }
         }
 
-        function updateItemName(categoryIndex, itemIndex, newName) {
-            budgetItems[categoryIndex].items[itemIndex].name = newName;
-            syncToCloud('budget', budgetItems);
+        window.updateItemName = function(categoryIndex, itemIndex, newName) {
+            console.log('항목명 변경:', categoryIndex, itemIndex, newName);
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex] && newName.trim()) {
+                budgetItems[categoryIndex].items[itemIndex].name = newName.trim();
+                syncToCloud('budget', budgetItems);
+            }
         }
 
-        function updateItemAmount(categoryIndex, itemIndex, newAmount) {
-            budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
-            syncToCloud('budget', budgetItems);
-            updateBudgetModal();
+        window.updateItemAmount = function(categoryIndex, itemIndex, newAmount) {
+            console.log('금액 변경:', categoryIndex, itemIndex, newAmount);
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
+                budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
         function updateBudgetModal() {
+            console.log('예산 모달 업데이트 시작');
             const budgetBreakdown = document.querySelector('.budget-breakdown');
             const totalAmount = document.querySelector('.total-amount h2');
             
             if (budgetBreakdown) {
+                console.log('예산 카테고리 렌더링');
                 budgetBreakdown.innerHTML = renderBudgetCategories();
             }
             
             if (totalAmount) {
-                totalAmount.textContent = `총 예산: ${formatCurrency(calculateTotalBudget())}`;
+                const newTotal = calculateTotalBudget();
+                console.log('총 예산 업데이트:', newTotal);
+                totalAmount.innerHTML = `총 예산: ${formatCurrency(newTotal)}<br><span style="font-size: 0.6em; opacity: 0.9;">확정 항목들의 합계입니다</span>`;
+            }
+            
+            // 시각적 피드백
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.style.animation = 'none';
+                modal.offsetHeight; // 강제 리플로우
+                modal.style.animation = null;
             }
         }
 
@@ -1588,7 +1624,7 @@
                         <div class="info-section">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <h3>📊 항목별 상세 예산</h3>
-                                <button onclick="addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                                <button onclick="window.addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
                             </div>
                             <div class="budget-breakdown">
                                 ${renderBudgetCategories()}
