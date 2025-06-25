@@ -507,10 +507,15 @@
             margin: 0;
         }
 
-        .photo-placeholder {
+        .photo-upload-area {
+            margin-bottom: 30px;
+        }
+
+        .upload-placeholder {
             width: 100%;
-            height: 300px;
+            min-height: 200px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 3px dashed #667eea;
             border-radius: 15px;
             display: flex;
             flex-direction: column;
@@ -518,24 +523,113 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        .photo-placeholder:hover {
+        .upload-placeholder:hover {
+            background: linear-gradient(135deg, #e8eaf6 0%, #b39ddb 100%);
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-placeholder.drag-over {
+            background: linear-gradient(135deg, #e1f5fe 0%, #81d4fa 100%);
+            border-color: #2196f3;
             transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
 
-        .photo-placeholder span {
-            font-size: 3em;
-            margin-bottom: 10px;
+        .upload-placeholder span {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.7;
         }
 
-        .photo-placeholder p {
+        .upload-placeholder p {
             font-weight: bold;
             color: #667eea;
-            font-size: 1.1em;
-            margin: 0;
+            font-size: 1.2em;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .photo-preview {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-preview img {
+            width: 250px;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 74, 87, 0.9);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .photo-preview:hover .photo-delete-btn {
+            opacity: 1;
+        }
+
+        .photo-delete-btn:hover {
+            background: rgba(255, 74, 87, 1);
+            transform: scale(1.1);
+        }
+
+        .photo-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-size: 0.9em;
+            text-align: center;
         }
 
         .empty-content {
@@ -697,175 +791,21 @@
     </div>
 
     <script>
-        // 클라우드 동기화를 위한 설정
-        const CLOUD_STORAGE_KEY = 'wedding_shared_data';
-        const SYNC_INTERVAL = 30000; // 30초마다 동기화 체크
-        
         // 전역 변수
         let checklistData = {};
-        let budgetItems = [];
-        let lastSyncTime = 0;
+        let budgetItems = loadDefaultBudgetData();
+        let uploadedPhotos = [];
+        
+        // 간단한 실시간 동기화를 위한 변수들
+        let syncData = {
+            checklist: {},
+            budget: [],
+            photos: [],
+            lastUpdated: Date.now()
+        };
 
-        // 초기 데이터 로드
-        function initializeData() {
-            // 클라우드에서 먼저 로드 시도
-            const cloudData = loadFromCloud();
-            if (cloudData) {
-                checklistData = cloudData.checklist || {};
-                budgetItems = cloudData.budget || getDefaultBudgetData();
-                lastSyncTime = cloudData.timestamp || 0;
-                console.log('클라우드에서 데이터 로드됨');
-            } else {
-                // 로컬 스토리지에서 로드
-                checklistData = loadChecklistFromStorage();
-                budgetItems = loadBudgetFromStorage();
-                console.log('로컬 스토리지에서 데이터 로드됨');
-            }
-        }
-
-        // 클라우드 동기화 함수들
-        function saveToCloud(data) {
-            const cloudData = {
-                checklist: checklistData,
-                budget: budgetItems,
-                timestamp: Date.now(),
-                sessionId: getSessionId()
-            };
-            
-            try {
-                // 실제 구현에서는 Firebase, Supabase 등을 사용
-                // 여기서는 localStorage를 여러 브라우저 간 공유되는 것처럼 시뮬레이션
-                localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(cloudData));
-                
-                // 브라우저 간 통신 시뮬레이션 (BroadcastChannel 사용)
-                if ('BroadcastChannel' in window) {
-                    const channel = new BroadcastChannel('wedding_sync');
-                    channel.postMessage({
-                        type: 'data_update',
-                        data: cloudData
-                    });
-                }
-                
-                lastSyncTime = cloudData.timestamp;
-                console.log('클라우드에 데이터 저장됨:', new Date(lastSyncTime).toLocaleString());
-                
-                // 로컬 스토리지에도 백업 저장
-                saveChecklistToStorage();
-                saveBudgetToStorage();
-                
-            } catch (error) {
-                console.error('클라우드 저장 실패:', error);
-            }
-        }
-
-        function loadFromCloud() {
-            try {
-                const cloudData = localStorage.getItem(CLOUD_STORAGE_KEY);
-                if (cloudData) {
-                    const parsedData = JSON.parse(cloudData);
-                    console.log('클라우드 데이터 확인:', new Date(parsedData.timestamp).toLocaleString());
-                    return parsedData;
-                }
-            } catch (error) {
-                console.error('클라우드 로드 실패:', error);
-            }
-            return null;
-        }
-
-        function syncFromCloud() {
-            const cloudData = loadFromCloud();
-            if (cloudData && cloudData.timestamp > lastSyncTime) {
-                console.log('새로운 클라우드 데이터 발견, 동기화 중...');
-                
-                checklistData = cloudData.checklist || {};
-                budgetItems = cloudData.budget || getDefaultBudgetData();
-                lastSyncTime = cloudData.timestamp;
-                
-                // UI 업데이트
-                updateCurrentModal();
-                
-                console.log('동기화 완료:', new Date(lastSyncTime).toLocaleString());
-                return true;
-            }
-            return false;
-        }
-
-        function updateCurrentModal() {
-            // 현재 열린 모달이 있으면 업데이트
-            const currentModal = document.querySelector('.modal-overlay');
-            if (currentModal) {
-                const modalTitle = currentModal.querySelector('.modal-header h2');
-                if (modalTitle) {
-                    if (modalTitle.textContent.includes('총 예산')) {
-                        updateBudgetModal();
-                    } else if (modalTitle.textContent.includes('결혼식') || modalTitle.textContent.includes('신혼여행')) {
-                        loadChecklist();
-                    }
-                }
-            }
-        }
-
-        function getSessionId() {
-            let sessionId = sessionStorage.getItem('wedding_session_id');
-            if (!sessionId) {
-                sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                sessionStorage.setItem('wedding_session_id', sessionId);
-            }
-            return sessionId;
-        }
-
-        // 기존 저장 함수들을 클라우드 동기화로 수정 (안전성 강화)
-        function saveChecklistToStorage() {
-            try {
-                if (localStorage) {
-                    localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
-                }
-                // 디바운싱된 클라우드 저장
-                clearTimeout(window.cloudSaveTimeout);
-                window.cloudSaveTimeout = setTimeout(() => {
-                    saveToCloud();
-                }, 1000); // 1초 후 클라우드 저장
-            } catch (error) {
-                console.error('체크리스트 저장 오류:', error);
-            }
-        }
-
-        function loadChecklistFromStorage() {
-            try {
-                const saved = localStorage?.getItem('weddingChecklist');
-                return saved ? JSON.parse(saved) : {};
-            } catch (error) {
-                console.error('체크리스트 로드 오류:', error);
-                return {};
-            }
-        }
-
-        function saveBudgetToStorage() {
-            try {
-                if (localStorage) {
-                    localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
-                }
-                // 디바운싱된 클라우드 저장
-                clearTimeout(window.cloudSaveTimeout);
-                window.cloudSaveTimeout = setTimeout(() => {
-                    saveToCloud();
-                }, 1000); // 1초 후 클라우드 저장
-            } catch (error) {
-                console.error('예산 저장 오류:', error);
-            }
-        }
-
-        function loadBudgetFromStorage() {
-            try {
-                const saved = localStorage?.getItem('weddingBudget');
-                return saved ? JSON.parse(saved) : getDefaultBudgetData();
-            } catch (error) {
-                console.error('예산 로드 오류:', error);
-                return getDefaultBudgetData();
-            }
-        }
-
-        function getDefaultBudgetData() {
+        // 기본 예산 데이터
+        function loadDefaultBudgetData() {
             return [
                 { category: '🏨 예식장 (PJ호텔)', items: [
                     { name: '예식장 대관료', amount: 3500000 },
@@ -874,14 +814,16 @@
                     { name: '본식스냅 (원판 10p 2권+합본 30p 1권)', amount: 0, note: '포함' }
                 ]},
                 { category: '📸 스튜디오 (로이스튜디오)', items: [
-                    { name: '세미토탈, 16R액자, 원본전라벨', amount: 2130000 }
-                ]},
-                { category: '👗 드레스 & 메이크업', items: [
-                    { name: '드레스 (위드브라이드)', amount: 0, note: '포함' },
-                    { name: '메이크업 (메이븐)', amount: 11788000 },
-                    { name: '헬퍼비', amount: 450000 },
+                    { name: '세미토탈, 16R액자, 원본전라벨', amount: 2130000 },
+                    { name: '헬퍼비', amount: 150000 },
                     { name: '헤어변형', amount: 220000 },
                     { name: '원본수정본', amount: 220000 }
+                ]},
+                { category: '👗 드레스 & 메이크업 (위드브라이드/메이븐)', items: [
+                    { name: '드레스 (위드브라이드)', amount: 0, note: '포함' },
+                    { name: '메이크업 (메이븐)', amount: 11788000 },
+                    { name: '헬퍼비', amount: 300000 },
+                    { name: '야간수당', amount: 50000 }
                 ]},
                 { category: '🎵 음향 & 촬영', items: [
                     { name: '촬영', amount: 430000 },
@@ -893,73 +835,123 @@
                 ]},
                 { category: '💎 예물', items: [
                     { name: '예물', amount: 2120000 }
+                ]},
+                { category: '👘 혼주 예복', items: [
+                    { name: '혼주한복 (우리옷길쌈) 2벌', amount: 660000 },
+                    { name: '턱시도', amount: 820000 }
+                ]},
+                { category: '📋 추가 준비사항', items: [
+                    { name: '청첩장 + 식권 제작', amount: 0, note: '미정' },
+                    { name: '스튜디오 사진 보정', amount: 0, note: '네이버' },
+                    { name: '식전영상 제작', amount: 0, note: '미정' },
+                    { name: '웨딩 사진 앨범 제작', amount: 0, note: '미정' },
+                    { name: '신부 피부관리', amount: 0, note: '미정' },
+                    { name: '답례품', amount: 0, note: '미정' },
+                    { name: '양가인사 선물', amount: 0, note: '미정' }
                 ]}
             ];
         }
 
-        // 실시간 동기화 리스너 설정 (안전성 강화)
-        let broadcastChannel = null;
-
-        function setupSyncListeners() {
+        // 동기화 함수들
+        function syncToCloud(dataType, data) {
+            syncData[dataType] = data;
+            syncData.lastUpdated = Date.now();
+            
+            // localStorage를 사용하여 새로고침 후에도 데이터 유지
             try {
-                if ('BroadcastChannel' in window && !broadcastChannel) {
-                    broadcastChannel = new BroadcastChannel('wedding_sync');
-                    broadcastChannel.onmessage = function(event) {
-                        try {
-                            if (event.data.type === 'data_update') {
-                                console.log('다른 탭에서 데이터 업데이트 감지');
-                                // 즉시 동기화하지 않고 약간의 지연
-                                setTimeout(() => {
-                                    syncFromCloud();
-                                }, 500);
-                            }
-                        } catch (error) {
-                            console.error('BroadcastChannel 메시지 처리 오류:', error);
-                        }
-                    };
-                }
+                localStorage.setItem('weddingSync', JSON.stringify(syncData));
+                console.log(`${dataType} 데이터가 동기화되었습니다.`);
+                
+                // 다른 탭이나 창에 변경사항 알림
+                window.dispatchEvent(new CustomEvent('weddingDataSync', { 
+                    detail: { type: dataType, data: data } 
+                }));
             } catch (error) {
-                console.log('BroadcastChannel 설정 오류:', error);
+                console.log('동기화 중 오류:', error);
             }
         }
 
-        // 페이지 포커스 시 동기화 (안전성 강화)
-        let focusTimeout = null;
+        function syncFromCloud() {
+            try {
+                const savedSync = localStorage.getItem('weddingSync');
+                if (savedSync) {
+                    const parsedData = JSON.parse(savedSync);
+                    
+                    // 데이터가 존재하면 로컬 데이터 업데이트
+                    if (parsedData.lastUpdated) {
+                        checklistData = parsedData.checklist || {};
+                        budgetItems = parsedData.budget && parsedData.budget.length > 0 ? parsedData.budget : loadDefaultBudgetData();
+                        uploadedPhotos = parsedData.photos || [];
+                        syncData = parsedData;
+                        
+                        console.log('저장된 데이터를 로드했습니다.');
+                        console.log('체크리스트 데이터:', checklistData);
+                        console.log('예산 데이터:', budgetItems);
+                        
+                        // UI 업데이트
+                        updateAllModals();
+                        return true;
+                    }
+                } else {
+                    // 저장된 데이터가 없으면 기본값으로 초기화
+                    console.log('저장된 데이터가 없어 기본 데이터로 초기화합니다.');
+                    initializeDefaultData();
+                }
+            } catch (error) {
+                console.log('동기화 데이터 로드 중 오류:', error);
+                initializeDefaultData();
+            }
+            return false;
+        }
+
+        function initializeDefaultData() {
+            checklistData = {};
+            budgetItems = loadDefaultBudgetData();
+            uploadedPhotos = [];
+            syncData = {
+                checklist: {},
+                budget: budgetItems,
+                photos: [],
+                lastUpdated: Date.now()
+            };
+            // 기본 데이터를 저장
+            syncToCloud('budget', budgetItems);
+            console.log('기본 예산 데이터 초기화 완료:', budgetItems);
+        }
+
+        function updateAllModals() {
+            // 현재 열린 모달 업데이트
+            const currentModal = document.querySelector('.modal-overlay');
+            if (currentModal) {
+                const modalHeader = currentModal.querySelector('.modal-header h2');
+                if (modalHeader) {
+                    const modalType = modalHeader.textContent;
+                    if (modalType.includes('총 예산')) {
+                        updateBudgetModal();
+                    } else if (modalType.includes('웨딩 사진')) {
+                        renderPhotos();
+                    }
+                    // 체크리스트는 자동으로 동기화됨
+                    loadChecklist();
+                }
+            }
+        }
+
+        // 실시간 동기화 리스너
+        window.addEventListener('weddingDataSync', function(e) {
+            console.log('다른 탭에서 데이터 변경:', e.detail.type);
+            syncFromCloud();
+        });
+
+        // 페이지 포커스시 동기화 체크
         window.addEventListener('focus', function() {
-            console.log('페이지 포커스 - 동기화 체크');
-            clearTimeout(focusTimeout);
-            focusTimeout = setTimeout(() => {
-                syncFromCloud();
-            }, 500);
+            syncFromCloud();
         });
 
-        // 주기적 동기화 (안전성 강화)
-        let syncInterval = null;
-        function startPeriodicSync() {
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = setInterval(function() {
-                try {
-                    syncFromCloud();
-                } catch (error) {
-                    console.error('주기적 동기화 오류:', error);
-                }
-            }, SYNC_INTERVAL);
-        }
-
-        // 페이지 떠날 때 마지막 저장 및 정리
-        window.addEventListener('beforeunload', function() {
-            try {
-                saveToCloud();
-                if (broadcastChannel) {
-                    broadcastChannel.close();
-                }
-                if (syncInterval) {
-                    clearInterval(syncInterval);
-                }
-            } catch (error) {
-                console.error('페이지 종료 시 정리 오류:', error);
-            }
-        });
+        // 주기적 동기화 (5초마다)
+        setInterval(function() {
+            syncFromCloud();
+        }, 5000);
 
         function calculateTotalBudget() {
             return budgetItems.reduce((total, category) => {
@@ -972,19 +964,34 @@
         }
 
         function renderBudgetCategories() {
+            if (!budgetItems || budgetItems.length === 0) {
+                return '<p style="text-align: center; color: #666; padding: 20px;">예산 데이터를 로드하는 중...</p>';
+            }
+            
             return budgetItems.map((category, categoryIndex) => `
                 <div class="budget-category">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 contenteditable="true" onblur="updateCategoryName(${categoryIndex}, this.textContent)">${category.category}</h4>
+                        <h4 contenteditable="true" 
+                            onblur="updateCategoryName(${categoryIndex}, this.textContent)" 
+                            data-category="${categoryIndex}"
+                            style="cursor: text; min-width: 200px; padding: 5px; border-radius: 3px; transition: background-color 0.3s;"
+                            title="클릭해서 편집하세요 (20초 후 자동 저장)">${category.category}</h4>
                         <button onclick="deleteBudgetCategory(${categoryIndex})" style="background: #ff4757; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">삭제</button>
                     </div>
                     ${category.items.map((item, itemIndex) => `
                         <div class="budget-item">
-                            <span contenteditable="true" onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)">${item.name}</span>
+                            <span contenteditable="true" 
+                                  onblur="updateItemName(${categoryIndex}, ${itemIndex}, this.textContent)" 
+                                  data-item="${categoryIndex}_${itemIndex}"
+                                  style="cursor: text; min-width: 200px; display: inline-block; padding: 3px; border-radius: 3px; transition: background-color 0.3s;"
+                                  title="클릭해서 편집하세요 (20초 후 자동 저장)">${item.name}</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="number" value="${item.amount}" onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)" 
+                                <input type="number" value="${item.amount}" 
+                                       onchange="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)"
+                                       oninput="updateItemAmount(${categoryIndex}, ${itemIndex}, this.value)"
                                        style="width: 120px; padding: 5px; border: 1px solid #ddd; border-radius: 5px;" 
-                                       ${item.note ? 'disabled' : ''}>
+                                       ${item.note ? 'disabled' : ''}
+                                       title="금액 입력 (5초 후 자동 저장)">
                                 <span class="amount">${item.note || formatCurrency(item.amount)}</span>
                                 <button onclick="deleteBudgetItem(${categoryIndex}, ${itemIndex})" style="background: #ff6b7a; color: white; border: none; border-radius: 3px; padding: 3px 6px; cursor: pointer; font-size: 12px;">×</button>
                             </div>
@@ -995,59 +1002,184 @@
             `).join('');
         }
 
-        function addBudgetCategory() {
+        // 디바운싱을 위한 타이머 변수들
+        let categoryNameTimer = {};
+        let itemNameTimer = {};
+        let amountTimer = {};
+
+        // 예산 관련 함수들을 전역으로 등록
+        window.addBudgetCategory = function() {
+            console.log('새 카테고리 추가');
             budgetItems.push({
                 category: '새 카테고리',
                 items: [{ name: '새 항목', amount: 0 }]
             });
-            saveBudgetToStorage(); // 클라우드 동기화 포함
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
-        function deleteBudgetCategory(categoryIndex) {
-            budgetItems.splice(categoryIndex, 1);
-            saveBudgetToStorage(); // 클라우드 동기화 포함
-            updateBudgetModal();
+        window.deleteBudgetCategory = function(categoryIndex) {
+            console.log('카테고리 삭제:', categoryIndex);
+            if (confirm('이 카테고리를 삭제하시겠습니까?')) {
+                budgetItems.splice(categoryIndex, 1);
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function addBudgetItem(categoryIndex) {
-            budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
-            saveBudgetToStorage(); // 클라우드 동기화 포함
-            updateBudgetModal();
+        window.addBudgetItem = function(categoryIndex) {
+            console.log('새 항목 추가:', categoryIndex);
+            if (budgetItems[categoryIndex]) {
+                budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function deleteBudgetItem(categoryIndex, itemIndex) {
-            budgetItems[categoryIndex].items.splice(itemIndex, 1);
-            saveBudgetToStorage(); // 클라우드 동기화 포함
-            updateBudgetModal();
+        window.deleteBudgetItem = function(categoryIndex, itemIndex) {
+            console.log('항목 삭제:', categoryIndex, itemIndex);
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
+                budgetItems[categoryIndex].items.splice(itemIndex, 1);
+                syncToCloud('budget', budgetItems);
+                updateBudgetModal();
+            }
         }
 
-        function updateCategoryName(categoryIndex, newName) {
-            budgetItems[categoryIndex].category = newName;
-            saveBudgetToStorage(); // 클라우드 동기화 포함
+        window.updateCategoryName = function(categoryIndex, newName) {
+            console.log('카테고리명 변경 대기 중:', categoryIndex, newName);
+            
+            // 기존 타이머 클리어
+            if (categoryNameTimer[categoryIndex]) {
+                clearTimeout(categoryNameTimer[categoryIndex]);
+            }
+            
+            // 20초 후에 저장
+            categoryNameTimer[categoryIndex] = setTimeout(() => {
+                if (budgetItems[categoryIndex] && newName.trim()) {
+                    budgetItems[categoryIndex].category = newName.trim();
+                    syncToCloud('budget', budgetItems);
+                    console.log('카테고리명 저장됨:', newName);
+                    
+                    // 저장 완료 표시
+                    const element = document.querySelector(`[data-category="${categoryIndex}"]`);
+                    if (element) {
+                        element.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                }
+                delete categoryNameTimer[categoryIndex];
+            }, 20000); // 20초
         }
 
-        function updateItemName(categoryIndex, itemIndex, newName) {
-            budgetItems[categoryIndex].items[itemIndex].name = newName;
-            saveBudgetToStorage(); // 클라우드 동기화 포함
+        window.updateItemName = function(categoryIndex, itemIndex, newName) {
+            console.log('항목명 변경 대기 중:', categoryIndex, itemIndex, newName);
+            
+            const key = `${categoryIndex}_${itemIndex}`;
+            
+            // 기존 타이머 클리어
+            if (itemNameTimer[key]) {
+                clearTimeout(itemNameTimer[key]);
+            }
+            
+            // 20초 후에 저장
+            itemNameTimer[key] = setTimeout(() => {
+                if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex] && newName.trim()) {
+                    budgetItems[categoryIndex].items[itemIndex].name = newName.trim();
+                    syncToCloud('budget', budgetItems);
+                    console.log('항목명 저장됨:', newName);
+                    
+                    // 저장 완료 표시
+                    const element = document.querySelector(`[data-item="${categoryIndex}_${itemIndex}"]`);
+                    if (element) {
+                        element.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                }
+                delete itemNameTimer[key];
+            }, 20000); // 20초
         }
 
-        function updateItemAmount(categoryIndex, itemIndex, newAmount) {
-            budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
-            saveBudgetToStorage(); // 클라우드 동기화 포함
-            updateBudgetModal();
+        window.updateItemAmount = function(categoryIndex, itemIndex, newAmount) {
+            console.log('금액 변경:', categoryIndex, itemIndex, newAmount);
+            
+            const key = `${categoryIndex}_${itemIndex}`;
+            
+            // 기존 타이머 클리어
+            if (amountTimer[key]) {
+                clearTimeout(amountTimer[key]);
+            }
+            
+            // 즉시 UI 업데이트 (총액 표시용)
+            if (budgetItems[categoryIndex] && budgetItems[categoryIndex].items[itemIndex]) {
+                const tempAmount = parseInt(newAmount) || 0;
+                budgetItems[categoryIndex].items[itemIndex].amount = tempAmount;
+                
+                // 총액만 즉시 업데이트
+                const totalAmount = document.querySelector('.total-amount h2');
+                if (totalAmount) {
+                    const newTotal = calculateTotalBudget();
+                    totalAmount.innerHTML = `총 예산: ${formatCurrency(newTotal)}<br><span style="font-size: 0.6em; opacity: 0.9;">확정 항목들의 합계입니다</span>`;
+                }
+            }
+            
+            // 5초 후에 저장 (금액은 빠르게 저장)
+            amountTimer[key] = setTimeout(() => {
+                syncToCloud('budget', budgetItems);
+                console.log('금액 저장됨:', newAmount);
+                delete amountTimer[key];
+            }, 5000); // 5초
+        }
+
+        // 수동 저장 함수
+        window.saveBudgetNow = function() {
+            // 모든 대기 중인 타이머 실행
+            Object.keys(categoryNameTimer).forEach(key => {
+                clearTimeout(categoryNameTimer[key]);
+            });
+            Object.keys(itemNameTimer).forEach(key => {
+                clearTimeout(itemNameTimer[key]);
+            });
+            Object.keys(amountTimer).forEach(key => {
+                clearTimeout(amountTimer[key]);
+            });
+            
+            // 즉시 저장
+            syncToCloud('budget', budgetItems);
+            console.log('예산 데이터 즉시 저장됨');
+            alert('예산 데이터가 저장되었습니다!');
+            
+            // 타이머 초기화
+            categoryNameTimer = {};
+            itemNameTimer = {};
+            amountTimer = {};
         }
 
         function updateBudgetModal() {
+            console.log('예산 모달 업데이트 시작');
             const budgetBreakdown = document.querySelector('.budget-breakdown');
             const totalAmount = document.querySelector('.total-amount h2');
             
             if (budgetBreakdown) {
+                console.log('예산 카테고리 렌더링');
                 budgetBreakdown.innerHTML = renderBudgetCategories();
             }
             
             if (totalAmount) {
-                totalAmount.textContent = `총 예산: ${formatCurrency(calculateTotalBudget())}`;
+                const newTotal = calculateTotalBudget();
+                console.log('총 예산 업데이트:', newTotal);
+                totalAmount.innerHTML = `총 예산: ${formatCurrency(newTotal)}<br><span style="font-size: 0.6em; opacity: 0.9;">확정 항목들의 합계입니다</span>`;
+            }
+            
+            // 시각적 피드백
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.style.animation = 'none';
+                modal.offsetHeight; // 강제 리플로우
+                modal.style.animation = null;
             }
         }
 
@@ -1076,7 +1208,7 @@
                 checklistData[checkbox.id] = checkbox.checked;
             });
             
-            saveChecklistToStorage(); // 클라우드 동기화 포함
+            syncToCloud('checklist', checklistData);
             
             const saveStatus = document.getElementById('saveStatus');
             if (saveStatus) {
@@ -1090,48 +1222,212 @@
         }
 
         function loadChecklist() {
-            // 약간의 지연을 두어 DOM이 완전히 로드된 후 실행
+            // 모달이 열릴 때마다 최신 데이터 로드
+            console.log('체크리스트 로드 시작');
+            
+            // 0.5초 후에 체크박스에 이벤트 리스너 추가 (DOM이 완전히 로드된 후)
             setTimeout(() => {
                 const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
-                console.log('체크박스 로드 중:', checkboxes.length, '개 발견');
+                console.log('찾은 체크박스 수:', checkboxes.length);
+                console.log('현재 체크리스트 데이터:', checklistData);
                 
                 checkboxes.forEach(checkbox => {
                     // 저장된 상태 복원
                     if (checklistData[checkbox.id]) {
                         checkbox.checked = true;
+                        console.log('체크박스 복원:', checkbox.id, 'checked');
                     }
                     
-                    // 기존 이벤트 리스너가 있는지 확인하고 중복 방지
-                    if (!checkbox.hasAttribute('data-listener-added')) {
-                        checkbox.setAttribute('data-listener-added', 'true');
-                        
-                        // 단일 change 이벤트만 사용
-                        checkbox.addEventListener('change', function(event) {
-                            console.log('체크박스 변경:', this.id, this.checked);
-                            
-                            // 즉시 저장
-                            checklistData[this.id] = this.checked;
-                            
-                            // 디바운싱을 통한 클라우드 저장 (과도한 저장 방지)
-                            clearTimeout(this.saveTimeout);
-                            this.saveTimeout = setTimeout(() => {
-                                saveChecklistToStorage();
-                            }, 500); // 0.5초 후 저장
-                            
-                            // 시각적 피드백
-                            const checkItem = this.closest('.check-item');
-                            if (checkItem) {
-                                checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '#ffe8e8';
-                                setTimeout(() => {
-                                    checkItem.style.backgroundColor = '';
-                                }, 800);
-                            }
-                        });
-                    }
+                    // 기존 이벤트 리스너 제거 후 새로 추가
+                    checkbox.removeEventListener('change', handleCheckboxChange);
+                    checkbox.addEventListener('change', handleCheckboxChange);
                 });
+            }, 500);
+        }
+
+        function handleCheckboxChange(event) {
+            const checkbox = event.target;
+            console.log('체크박스 변경:', checkbox.id, checkbox.checked);
+            
+            checklistData[checkbox.id] = checkbox.checked;
+            syncToCloud('checklist', checklistData);
+            
+            // 시각적 피드백
+            const checkItem = checkbox.closest('.check-item');
+            if (checkItem) {
+                checkItem.style.backgroundColor = checkbox.checked ? '#e8f5e8' : '#ffe8e8';
+                setTimeout(() => {
+                    checkItem.style.backgroundColor = '';
+                }, 800);
+            }
+            
+            // 즉시 저장 상태 표시
+            const saveStatus = document.getElementById('saveStatus');
+            if (saveStatus) {
+                saveStatus.textContent = '✅ 자동 저장됨!';
+                saveStatus.style.color = '#28a745';
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                }, 2000);
+            }
+        }
+
+        // 사진 업로드 관련 함수들
+        function setupPhotoUpload() {
+            const uploadArea = document.getElementById('photoUploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const placeholder = document.getElementById('uploadPlaceholder');
+            const uploadBtn = placeholder.querySelector('.upload-btn');
+
+            if (!uploadArea || !fileInput || !placeholder) {
+                console.error('Upload elements not found');
+                return;
+            }
+
+            // 파일 선택 이벤트
+            fileInput.addEventListener('change', function(e) {
+                console.log('File input changed:', e.target.files);
+                handleFileSelect(e);
+            });
+
+            // 드래그 앤 드롭 이벤트
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    placeholder.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    placeholder.classList.remove('drag-over');
+                }, false);
+            });
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+            
+            // placeholder 클릭 이벤트 (버튼 영역 제외)
+            placeholder.addEventListener('click', function(e) {
+                // 버튼을 클릭한 경우는 제외
+                if (e.target.classList.contains('upload-btn')) {
+                    return;
+                }
+                console.log('Placeholder clicked, opening file dialog');
+                fileInput.click();
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            console.log('handleFileSelect called');
+            const files = e.target.files;
+            console.log('Selected files:', files.length);
+            
+            if (files.length > 0) {
+                handleFiles(files);
+                // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+                e.target.value = '';
+            }
+        }
+
+        function handleFiles(files) {
+            console.log('handleFiles called with', files.length, 'files');
+            Array.from(files).forEach(file => {
+                console.log('Processing file:', file.name, file.type);
+                uploadPhoto(file);
+            });
+        }
+
+        function uploadPhoto(file) {
+            console.log('uploadPhoto called for:', file.name);
+            
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드할 수 있습니다.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                console.log('File read successfully');
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    src: e.target.result,
+                    name: file.name,
+                    size: file.size
+                };
                 
-                console.log('체크박스 이벤트 리스너 설정 완료');
-            }, 100);
+                uploadedPhotos.push(photoData);
+                console.log('Photo added to array. Total photos:', uploadedPhotos.length);
+                savePhotosToStorage();
+                renderPhotos();
+            };
+            
+            reader.onerror = function(e) {
+                console.error('File read error:', e);
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function renderPhotos() {
+            console.log('renderPhotos called, photos count:', uploadedPhotos.length);
+            const gallery = document.getElementById('photoGallery');
+            
+            if (!gallery) {
+                console.error('Photo gallery element not found');
+                return;
+            }
+
+            if (uploadedPhotos.length === 0) {
+                gallery.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">업로드된 사진이 없습니다.</p>';
+                return;
+            }
+
+            gallery.innerHTML = uploadedPhotos.map(photo => `
+                <div class="photo-preview">
+                    <img src="${photo.src}" alt="${photo.name}" onclick="openImageModal('${photo.src}')">
+                    <button class="photo-delete-btn" onclick="deletePhoto('${photo.id}')">&times;</button>
+                    <div class="photo-caption">${photo.name}</div>
+                </div>
+            `).join('');
+            
+            console.log('Gallery updated with', uploadedPhotos.length, 'photos');
+        }
+
+        function deletePhoto(photoId) {
+            uploadedPhotos = uploadedPhotos.filter(photo => photo.id != photoId);
+            syncToCloud('photos', uploadedPhotos);
+            renderPhotos();
+        }
+
+        function savePhotosToStorage() {
+            try {
+                syncToCloud('photos', uploadedPhotos);
+                console.log(`${uploadedPhotos.length}개의 사진이 모든 기기에 동기화되었습니다.`);
+            } catch (error) {
+                console.log('사진 저장 중 오류가 발생했습니다:', error);
+            }
+        }
+
+        function loadPhotos() {
+            // 동기화된 데이터에서 사진 로드
+            syncFromCloud();
+            renderPhotos();
         }
 
         // 메인 함수들
@@ -1235,9 +1531,12 @@
                             <div class="save-section">
                                 <button class="save-btn" onclick="saveChecklist()">
                                     <span class="button-icon">💾</span>
-                                    체크리스트 저장
+                                    수동 저장 (자동 저장됨)
                                 </button>
                                 <p class="save-status" id="saveStatus"></p>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                    💡 체크박스를 클릭하면 자동으로 저장됩니다
+                                </p>
                             </div>
                         </div>
 
@@ -1342,8 +1641,8 @@
                                     <label for="seat-reservation">하루 전날 좌석 예약하기</label>
                                 </div>
                                 <div class="check-item">
-                                    <input type="checkbox" id="travel-payment">
-                                    <label for="travel-payment">여행사 결제 완료</label>
+                                    <input type="checkbox" id="travel-payment" checked>
+                                    <label for="travel-payment">여행사 결제 완료 ✅</label>
                                 </div>
                                 <div class="check-item">
                                     <input type="checkbox" id="esta">
@@ -1366,9 +1665,12 @@
                             <div class="save-section">
                                 <button class="save-btn" onclick="saveChecklist()">
                                     <span class="button-icon">💾</span>
-                                    체크리스트 저장
+                                    수동 저장 (자동 저장됨)
                                 </button>
                                 <p class="save-status" id="saveStatus"></p>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                    💡 체크박스를 클릭하면 자동으로 저장됩니다
+                                </p>
                             </div>
                         </div>
 
@@ -1397,6 +1699,13 @@
         function openBudgetModal() {
             addClickEffect(event.target.closest('.planning-button'));
             
+            // 예산 데이터가 비어있으면 기본 데이터로 초기화
+            if (!budgetItems || budgetItems.length === 0) {
+                console.log('예산 데이터가 비어있어 기본 데이터로 초기화합니다.');
+                budgetItems = loadDefaultBudgetData();
+                syncToCloud('budget', budgetItems);
+            }
+            
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'modal-overlay';
             modalOverlay.innerHTML = `
@@ -1411,6 +1720,7 @@
                             <div class="budget-summary">
                                 <div class="total-amount">
                                     <h2 style="color: white; margin-bottom: 20px;">총 예산: ${formatCurrency(calculateTotalBudget())}</h2>
+                                    <p style="color: rgba(255,255,255,0.9); font-size: 1em;">확정 항목들의 합계입니다</p>
                                 </div>
                             </div>
                         </div>
@@ -1418,7 +1728,10 @@
                         <div class="info-section">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <h3>📊 항목별 상세 예산</h3>
-                                <button onclick="addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="window.saveBudgetNow()" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 8px 15px; cursor: pointer; font-weight: bold;">💾 즉시 저장</button>
+                                    <button onclick="window.addBudgetCategory()" style="background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;">+ 카테고리 추가</button>
+                                </div>
                             </div>
                             <div class="budget-breakdown">
                                 ${renderBudgetCategories()}
@@ -1429,16 +1742,29 @@
                             <h3>📝 추가 준비사항</h3>
                             <div class="additional-items">
                                 <div class="additional-item">
-                                    <strong>혼주 예복</strong>
-                                    <p>• 한복 2벌: 66만원 (우리옷길쌈)</p>
-                                    <p>• 턱시도: 82만원</p>
+                                    <strong>🗓️ 중요 일정</strong>
+                                    <p>• 스튜디오 촬영: 2025.6.3 오전 7:00</p>
+                                    <p>• 드레스 피팅: 2025.9.5 오후 1:00</p>
+                                    <p>• 메이크업 리허설: 2025.10.25 오후 1시-4시</p>
                                 </div>
                                 <div class="additional-item">
-                                    <strong>기타</strong>
+                                    <strong>📋 추가 준비사항</strong>
                                     <p>• 청첩장 + 식권 제작</p>
+                                    <p>• 스튜디오 사진 보정 (네이버)</p>
+                                    <p>• 식전영상 제작</p>
+                                    <p>• 웨딩 사진 앨범 제작</p>
                                     <p>• 신부 피부관리</p>
-                                    <p>• 답례품</p>
+                                    <p>• 답례품 준비</p>
                                     <p>• 양가인사 선물</p>
+                                </div>
+                                <div class="additional-item">
+                                    <strong>🍽️ 기타 확인사항</strong>
+                                    <p>• 상견례 계획</p>
+                                    <p>• 리셉션드레스 (1달전 평일 11시-16시 방문)</p>
+                                    <p>• 리셉션드레스에 어울리는 구두 정하기</p>
+                                    <p>• 사회자대본 준비</p>
+                                    <p>• 혼인선언문 작성</p>
+                                    <p>• 축사 준비</p>
                                 </div>
                             </div>
                         </div>
@@ -1469,9 +1795,16 @@
                     <div class="modal-body">
                         <div class="info-section">
                             <h3>💕 우리의 웨딩 사진</h3>
-                            <div class="empty-content">
-                                <h3>📷 사진 갤러리</h3>
-                                <p>아직 업로드된 사진이 없습니다.<br>소중한 순간들을 여기에 추가해보세요!</p>
+                            <div class="photo-upload-area" id="photoUploadArea">
+                                <div class="upload-placeholder" id="uploadPlaceholder">
+                                    <span>📷</span>
+                                    <p>사진을 여기에 드래그 앤 드롭하거나<br>클릭해서 선택하세요</p>
+                                    <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">사진 선택</button>
+                                </div>
+                                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                            </div>
+                            <div class="photo-gallery" id="photoGallery">
+                                <!-- 업로드된 사진들이 여기에 표시됩니다 -->
                             </div>
                         </div>
                     </div>
@@ -1483,36 +1816,9 @@
             setTimeout(() => {
                 modalOverlay.style.opacity = '1';
                 modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                setupPhotoUpload();
+                loadPhotos();
             }, 10);
-        }
-
-        function openImageModal(imageSrc) {
-            const imageModalOverlay = document.createElement('div');
-            imageModalOverlay.className = 'modal-overlay';
-            imageModalOverlay.style.zIndex = '1001';
-            imageModalOverlay.innerHTML = `
-                <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent; box-shadow: none;">
-                    <img src="${imageSrc}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 15px;" onclick="closeImageModal()">
-                </div>
-            `;
-            
-            document.body.appendChild(imageModalOverlay);
-            
-            setTimeout(() => {
-                imageModalOverlay.style.opacity = '1';
-                imageModalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
-            }, 10);
-        }
-
-        function closeImageModal() {
-            const imageModalEl = document.querySelector('.modal-overlay[style*="z-index: 1001"]');
-            if (imageModalEl) {
-                imageModalEl.style.opacity = '0';
-                imageModalEl.querySelector('.modal-content').style.transform = 'scale(0.8)';
-                setTimeout(() => {
-                    imageModalEl.remove();
-                }, 300);
-            }
         }
 
         // 이벤트 리스너
@@ -1522,112 +1828,40 @@
             }
         });
 
-        // 페이지 로드 시 애니메이션 및 데이터 초기화 (안전성 강화)
+        // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
-            try {
-                console.log('페이지 로드 시작');
-                
-                // 데이터 초기화 (클라우드 동기화 포함)
-                initializeData();
-                
-                // 동기화 리스너 설정
-                setupSyncListeners();
-                
-                // 주기적 동기화 시작
-                startPeriodicSync();
-                
-                const buttons = document.querySelectorAll('.planning-button');
-                buttons.forEach((button, index) => {
-                    setTimeout(() => {
-                        button.style.opacity = '0';
-                        button.style.transform = 'translateY(30px)';
-                        button.style.transition = 'all 0.6s ease';
-                        
-                        setTimeout(() => {
-                            button.style.opacity = '1';
-                            button.style.transform = 'translateY(0)';
-                        }, 100);
-                    }, index * 200);
-                });
-                
-                // 동기화 상태 표시
+            // 동기화된 데이터 로드
+            syncFromCloud();
+            
+            const buttons = document.querySelectorAll('.planning-button');
+            buttons.forEach((button, index) => {
                 setTimeout(() => {
-                    updateSyncStatus();
-                }, 1000);
-                
-                console.log('페이지 로드 완료');
-            } catch (error) {
-                console.error('페이지 로드 오류:', error);
-            }
+                    button.style.opacity = '0';
+                    button.style.transform = 'translateY(30px)';
+                    button.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        button.style.opacity = '1';
+                        button.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+            
+            // 동기화 상태 표시
+            showSyncStatus();
         });
 
-        function updateSyncStatus() {
-            try {
-                const footer = document.querySelector('.footer');
-                if (footer) {
-                    footer.innerHTML = `
-                        <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
-                        <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
-                            🌐 다중 기기 실시간 동기화 활성화됨
-                        </p>
-                        <div style="margin-top: 8px;">
-                            <span style="display: inline-block; width: 6px; height: 6px; background: #28a745; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite;"></span>
-                            <span style="font-size: 0.7em; color: #666;">마지막 동기화: ${new Date(lastSyncTime || Date.now()).toLocaleTimeString()}</span>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('동기화 상태 업데이트 오류:', error);
+        function showSyncStatus() {
+            const container = document.querySelector('.container .footer');
+            if (container) {
+                container.innerHTML = `
+                    <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
+                    <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
+                        📱 실시간 동기화 활성화됨 - 모든 기기에서 같은 데이터를 확인할 수 있습니다
+                    </p>
+                `;
             }
         }
-
-        // 디버깅 함수들 (전역 접근 가능) - 안전성 강화
-        window.forceSyncNow = function() {
-            try {
-                console.log('강제 동기화 실행...');
-                const updated = syncFromCloud();
-                if (updated) {
-                    alert('새로운 데이터를 가져왔습니다!');
-                    updateSyncStatus();
-                } else {
-                    alert('이미 최신 데이터입니다.');
-                }
-            } catch (error) {
-                console.error('강제 동기화 오류:', error);
-                alert('동기화 중 오류가 발생했습니다.');
-            }
-        };
-
-        window.clearAllData = function() {
-            try {
-                if (confirm('모든 데이터를 삭제하시겠습니까? (모든 기기에서 삭제됩니다)')) {
-                    localStorage.removeItem('weddingChecklist');
-                    localStorage.removeItem('weddingBudget');
-                    localStorage.removeItem(CLOUD_STORAGE_KEY);
-                    location.reload();
-                }
-            } catch (error) {
-                console.error('데이터 삭제 오류:', error);
-            }
-        };
-
-        window.checkSyncStatus = function() {
-            try {
-                console.log('=== 동기화 상태 ===');
-                console.log('마지막 동기화:', new Date(lastSyncTime).toLocaleString());
-                console.log('세션 ID:', getSessionId());
-                console.log('체크리스트 항목:', Object.keys(checklistData).length);
-                console.log('예산 카테고리:', budgetItems.length);
-                
-                const cloudData = loadFromCloud();
-                if (cloudData) {
-                    console.log('클라우드 데이터 시간:', new Date(cloudData.timestamp).toLocaleString());
-                    console.log('시간 차이:', (Date.now() - cloudData.timestamp) / 1000, '초');
-                }
-            } catch (error) {
-                console.error('상태 확인 오류:', error);
-            }
-        };
 
         // 배경 효과
         setInterval(() => {
