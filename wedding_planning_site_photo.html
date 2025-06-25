@@ -699,7 +699,7 @@
     <script>
         // 클라우드 동기화를 위한 설정
         const CLOUD_STORAGE_KEY = 'wedding_shared_data';
-        const SYNC_INTERVAL = 10000; // 10초마다 동기화 체크
+        const SYNC_INTERVAL = 30000; // 30초마다 동기화 체크
         
         // 전역 변수
         let checklistData = {};
@@ -1438,8 +1438,11 @@
             }
         });
 
-        // 페이지 로드 시 애니메이션
+        // 페이지 로드 시 애니메이션 및 데이터 초기화
         window.addEventListener('load', function() {
+            // 데이터 초기화 (클라우드 동기화 포함)
+            initializeData();
+            
             const buttons = document.querySelectorAll('.planning-button');
             buttons.forEach((button, index) => {
                 setTimeout(() => {
@@ -1453,7 +1456,61 @@
                     }, 100);
                 }, index * 200);
             });
+            
+            // 동기화 상태 표시
+            updateSyncStatus();
         });
+
+        function updateSyncStatus() {
+            const footer = document.querySelector('.footer');
+            if (footer) {
+                footer.innerHTML = `
+                    <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
+                    <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
+                        🌐 다중 기기 실시간 동기화 활성화됨
+                    </p>
+                    <div style="margin-top: 8px;">
+                        <span style="display: inline-block; width: 6px; height: 6px; background: #28a745; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite;"></span>
+                        <span style="font-size: 0.7em; color: #666;">마지막 동기화: ${new Date(lastSyncTime || Date.now()).toLocaleTimeString()}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 디버깅 함수들 (전역 접근 가능)
+        window.forceSyncNow = function() {
+            console.log('강제 동기화 실행...');
+            const updated = syncFromCloud();
+            if (updated) {
+                alert('새로운 데이터를 가져왔습니다!');
+                updateSyncStatus();
+            } else {
+                alert('이미 최신 데이터입니다.');
+            }
+        };
+
+        window.clearAllData = function() {
+            if (confirm('모든 데이터를 삭제하시겠습니까? (모든 기기에서 삭제됩니다)')) {
+                localStorage.removeItem('weddingChecklist');
+                localStorage.removeItem('weddingBudget');
+                localStorage.removeItem(CLOUD_STORAGE_KEY);
+                location.reload();
+            }
+        };
+
+        window.checkSyncStatus = function() {
+            console.log('=== 동기화 상태 ===');
+            console.log('마지막 동기화:', new Date(lastSyncTime).toLocaleString());
+            console.log('세션 ID:', getSessionId());
+            console.log('체크리스트 항목:', Object.keys(checklistData).length);
+            console.log('예산 카테고리:', budgetItems.length);
+            
+            const cloudData = loadFromCloud();
+            if (cloudData) {
+                console.log('클라우드 데이터 시간:', new Date(cloudData.timestamp).toLocaleString());
+                console.log('시간 차이:', (Date.now() - cloudData.timestamp) / 1000, '초');
+            }
+        };
 
         // 배경 효과
         setInterval(() => {
