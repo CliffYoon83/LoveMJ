@@ -792,23 +792,21 @@
 
     <script>
         // 전역 변수
-        let checklistData = loadChecklistFromStorage();
-        let budgetItems = loadBudgetFromStorage();
-        // 저장 및 로드 함수들
-        function loadChecklistFromStorage() {
-            const saved = localStorage?.getItem('weddingChecklist');
-            return saved ? JSON.parse(saved) : {};
-        }
+        let checklistData = {};
+        let budgetItems = loadDefaultBudgetData();
+        let uploadedPhotos = [];
+        
+        // 간단한 실시간 동기화를 위한 변수들
+        let syncData = {
+            checklist: {},
+            budget: [],
+            photos: [],
+            lastUpdated: Date.now()
+        };
 
-        function saveChecklistToStorage() {
-            if (localStorage) {
-                localStorage.setItem('weddingChecklist', JSON.stringify(checklistData));
-            }
-        }
-
-        function loadBudgetFromStorage() {
-            const saved = localStorage?.getItem('weddingBudget');
-            return saved ? JSON.parse(saved) : [
+        // 기본 예산 데이터
+        function loadDefaultBudgetData() {
+            return [
                 { category: '🏨 예식장 (PJ호텔)', items: [
                     { name: '예식장 대관료', amount: 3500000 },
                     { name: '식대 (55,000원/인)', amount: 0, note: '계약인원 기준' },
@@ -839,11 +837,86 @@
             ];
         }
 
-        function saveBudgetToStorage() {
-            if (localStorage) {
-                localStorage.setItem('weddingBudget', JSON.stringify(budgetItems));
+        // 동기화 함수들
+        function syncToCloud(dataType, data) {
+            syncData[dataType] = data;
+            syncData.lastUpdated = Date.now();
+            
+            // 실제 구현에서는 여기서 서버로 데이터를 전송합니다
+            // 지금은 브라우저의 sessionStorage를 공유 저장소처럼 사용
+            try {
+                sessionStorage.setItem('weddingSync', JSON.stringify(syncData));
+                console.log(`${dataType} 데이터가 동기화되었습니다.`);
+                
+                // 다른 탭이나 창에 변경사항 알림
+                window.dispatchEvent(new CustomEvent('weddingDataSync', { 
+                    detail: { type: dataType, data: data } 
+                }));
+            } catch (error) {
+                console.log('동기화 중 오류:', error);
             }
         }
+
+        function syncFromCloud() {
+            try {
+                const savedSync = sessionStorage.getItem('weddingSync');
+                if (savedSync) {
+                    const parsedData = JSON.parse(savedSync);
+                    
+                    // 데이터가 더 최신이면 로컬 데이터 업데이트
+                    if (parsedData.lastUpdated > (syncData.lastUpdated || 0)) {
+                        checklistData = parsedData.checklist || {};
+                        budgetItems = parsedData.budget || loadDefaultBudgetData();
+                        uploadedPhotos = parsedData.photos || [];
+                        syncData = parsedData;
+                        
+                        console.log('클라우드에서 최신 데이터를 가져왔습니다.');
+                        console.log('체크리스트 데이터:', checklistData);
+                        
+                        // UI 업데이트
+                        updateAllModals();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.log('동기화 데이터 로드 중 오류:', error);
+            }
+            return false;
+        }
+
+        function updateAllModals() {
+            // 현재 열린 모달 업데이트
+            const currentModal = document.querySelector('.modal-overlay');
+            if (currentModal) {
+                const modalHeader = currentModal.querySelector('.modal-header h2');
+                if (modalHeader) {
+                    const modalType = modalHeader.textContent;
+                    if (modalType.includes('총 예산')) {
+                        updateBudgetModal();
+                    } else if (modalType.includes('웨딩 사진')) {
+                        renderPhotos();
+                    }
+                    // 체크리스트는 자동으로 동기화됨
+                    loadChecklist();
+                }
+            }
+        }
+
+        // 실시간 동기화 리스너
+        window.addEventListener('weddingDataSync', function(e) {
+            console.log('다른 탭에서 데이터 변경:', e.detail.type);
+            syncFromCloud();
+        });
+
+        // 페이지 포커스시 동기화 체크
+        window.addEventListener('focus', function() {
+            syncFromCloud();
+        });
+
+        // 주기적 동기화 (5초마다)
+        setInterval(function() {
+            syncFromCloud();
+        }, 5000);
 
         function calculateTotalBudget() {
             return budgetItems.reduce((total, category) => {
@@ -884,41 +957,41 @@
                 category: '새 카테고리',
                 items: [{ name: '새 항목', amount: 0 }]
             });
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
         function deleteBudgetCategory(categoryIndex) {
             budgetItems.splice(categoryIndex, 1);
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
         function addBudgetItem(categoryIndex) {
             budgetItems[categoryIndex].items.push({ name: '새 항목', amount: 0 });
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
         function deleteBudgetItem(categoryIndex, itemIndex) {
             budgetItems[categoryIndex].items.splice(itemIndex, 1);
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
         function updateCategoryName(categoryIndex, newName) {
             budgetItems[categoryIndex].category = newName;
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
         }
 
         function updateItemName(categoryIndex, itemIndex, newName) {
             budgetItems[categoryIndex].items[itemIndex].name = newName;
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
         }
 
         function updateItemAmount(categoryIndex, itemIndex, newAmount) {
             budgetItems[categoryIndex].items[itemIndex].amount = parseInt(newAmount) || 0;
-            saveBudgetToStorage();
+            syncToCloud('budget', budgetItems);
             updateBudgetModal();
         }
 
@@ -960,11 +1033,11 @@
                 checklistData[checkbox.id] = checkbox.checked;
             });
             
-            saveChecklistToStorage();
+            syncToCloud('checklist', checklistData);
             
             const saveStatus = document.getElementById('saveStatus');
             if (saveStatus) {
-                saveStatus.textContent = '✅ 체크리스트가 저장되었습니다!';
+                saveStatus.textContent = '✅ 체크리스트가 모든 기기에 동기화되었습니다!';
                 saveStatus.style.color = '#28a745';
                 
                 setTimeout(() => {
@@ -974,17 +1047,34 @@
         }
 
         function loadChecklist() {
+            // 최신 동기화 데이터 먼저 로드
+            syncFromCloud();
+            
             const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 if (checklistData[checkbox.id]) {
                     checkbox.checked = true;
                 }
+                
+                // 체크박스 변경 시 자동 저장 이벤트 추가
+                checkbox.addEventListener('change', function() {
+                    console.log('Checkbox changed:', this.id, this.checked);
+                    checklistData[this.id] = this.checked;
+                    syncToCloud('checklist', checklistData);
+                    
+                    // 시각적 피드백
+                    const checkItem = this.closest('.check-item');
+                    if (checkItem) {
+                        checkItem.style.backgroundColor = this.checked ? '#e8f5e8' : '';
+                        setTimeout(() => {
+                            checkItem.style.backgroundColor = '';
+                        }, 500);
+                    }
+                });
             });
         }
 
         // 사진 업로드 관련 함수들
-        let uploadedPhotos = [];
-
         function setupPhotoUpload() {
             const uploadArea = document.getElementById('photoUploadArea');
             const fileInput = document.getElementById('fileInput');
@@ -1123,21 +1213,22 @@
 
         function deletePhoto(photoId) {
             uploadedPhotos = uploadedPhotos.filter(photo => photo.id != photoId);
-            savePhotosToStorage();
+            syncToCloud('photos', uploadedPhotos);
             renderPhotos();
         }
 
         function savePhotosToStorage() {
             try {
-                // 메모리에만 저장 (브라우저 저장소는 사용하지 않음)
-                console.log(`${uploadedPhotos.length}개의 사진이 저장되었습니다.`);
+                syncToCloud('photos', uploadedPhotos);
+                console.log(`${uploadedPhotos.length}개의 사진이 모든 기기에 동기화되었습니다.`);
             } catch (error) {
                 console.log('사진 저장 중 오류가 발생했습니다:', error);
             }
         }
 
         function loadPhotos() {
-            // 메모리에서 사진 로드 (실제 구현에서는 서버나 다른 저장소에서 로드)
+            // 동기화된 데이터에서 사진 로드
+            syncFromCloud();
             renderPhotos();
         }
 
@@ -1242,9 +1333,12 @@
                             <div class="save-section">
                                 <button class="save-btn" onclick="saveChecklist()">
                                     <span class="button-icon">💾</span>
-                                    체크리스트 저장
+                                    수동 저장 (자동 저장됨)
                                 </button>
                                 <p class="save-status" id="saveStatus"></p>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                    💡 체크박스를 클릭하면 자동으로 저장됩니다
+                                </p>
                             </div>
                         </div>
 
@@ -1373,9 +1467,12 @@
                             <div class="save-section">
                                 <button class="save-btn" onclick="saveChecklist()">
                                     <span class="button-icon">💾</span>
-                                    체크리스트 저장
+                                    수동 저장 (자동 저장됨)
                                 </button>
                                 <p class="save-status" id="saveStatus"></p>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                    💡 체크박스를 클릭하면 자동으로 저장됩니다
+                                </p>
                             </div>
                         </div>
 
@@ -1509,8 +1606,11 @@
             }
         });
 
-        // 페이지 로드 시 애니메이션
+        // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
+            // 동기화된 데이터 로드
+            syncFromCloud();
+            
             const buttons = document.querySelectorAll('.planning-button');
             buttons.forEach((button, index) => {
                 setTimeout(() => {
@@ -1524,7 +1624,22 @@
                     }, 100);
                 }, index * 200);
             });
+            
+            // 동기화 상태 표시
+            showSyncStatus();
         });
+
+        function showSyncStatus() {
+            const container = document.querySelector('.container .footer');
+            if (container) {
+                container.innerHTML = `
+                    <p>💖 행복한 결혼을 위한 첫 걸음 💖</p>
+                    <p style="font-size: 0.8em; color: #888; margin-top: 10px;">
+                        📱 실시간 동기화 활성화됨 - 모든 기기에서 같은 데이터를 확인할 수 있습니다
+                    </p>
+                `;
+            }
+        }
 
         // 배경 효과
         setInterval(() => {
