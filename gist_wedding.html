@@ -309,7 +309,7 @@
     </style>
 </head>
 <body>
-    <div class="sync-status" id="syncStatus">🔄 설정 필요</div>
+    <div class="sync-status" id="syncStatus" onclick="openSettingsModal()" style="cursor: pointer;">🔄 설정 필요</div>
     
     <div class="container">
         <div class="header">
@@ -338,7 +338,7 @@
 
             <button class="planning-button budget-button" onclick="openSettingsModal()">
                 <span class="button-icon">⚙️</span>
-                설정
+                GitHub 설정
             </button>
         </div>
 
@@ -604,4 +604,308 @@
         // 모달 함수들
         function openChecklistModal() {
             const modalOverlay = document.createElement('div');
-            modalOverlay.className = 
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>💒 결혼식 체크리스트</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>📋 준비사항</h3>
+                            <div class="checklist">
+                                <div class="check-item">
+                                    <input type="checkbox" id="venue" onchange="updateChecklist('venue', this.checked)">
+                                    <label for="venue">예식장 예약 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="dress" onchange="updateChecklist('dress', this.checked)">
+                                    <label for="dress">드레스 선택 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="photography" onchange="updateChecklist('photography', this.checked)">
+                                    <label for="photography">스튜디오 예약 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="invitation" onchange="updateChecklist('invitation', this.checked)">
+                                    <label for="invitation">청첩장 발송 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="flowers" onchange="updateChecklist('flowers', this.checked)">
+                                    <label for="flowers">부케 & 부토니어 준비</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="music" onchange="updateChecklist('music', this.checked)">
+                                    <label for="music">식장 음악 준비</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="rings" onchange="updateChecklist('rings', this.checked)">
+                                    <label for="rings">예물 구매 완료</label>
+                                </div>
+                                <div class="check-item">
+                                    <input type="checkbox" id="honeymoon" onchange="updateChecklist('honeymoon', this.checked)">
+                                    <label for="honeymoon">신혼여행 예약 완료</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                updateAllUI();
+            }, 10);
+        }
+
+        function openPhotoModal() {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📸 웨딩 사진 갤러리</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>📷 사진 업로드</h3>
+                            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                                <p style="font-size: 3em;">📸</p>
+                                <p>클릭해서 사진을 업로드하세요</p>
+                                <p style="font-size: 0.9em; color: #888; margin-top: 10px;">최대 1MB까지 업로드 가능</p>
+                                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>💕 우리의 추억</h3>
+                            <div class="photo-gallery" id="photoGallery">
+                                <!-- 사진들이 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+                renderPhotos();
+            }, 10);
+        }
+
+        function openBudgetModal() {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>💰 예산 관리</h2>
+                        <button class="close-btn" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>💍 예산 계획</h3>
+                            <p>예산 관리 기능은 추후 업데이트 예정입니다.</p>
+                            <p>현재는 체크리스트와 사진 동기화 기능을 제공합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function openSettingsModal() {
+            console.log('설정 모달 열기');
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>⚙️ GitHub Gist 설정</h2>
+                        <button class="close-btn" onclick="window.closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-section">
+                            <h3>🔧 설정 방법</h3>
+                            <div style="text-align: left; line-height: 1.6;">
+                                <p><strong>1단계: GitHub Personal Access Token 생성</strong></p>
+                                <ol style="margin: 10px 0 20px 20px;">
+                                    <li>GitHub.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</li>
+                                    <li>"Generate new token (classic)" 클릭</li>
+                                    <li>Note: "Wedding Planner" 입력</li>
+                                    <li>Expiration: "No expiration" 선택</li>
+                                    <li>Scopes: "gist" 체크박스만 선택</li>
+                                    <li>"Generate token" 클릭 후 토큰 복사</li>
+                                </ol>
+                                
+                                <p><strong>2단계: 설정 입력</strong></p>
+                            </div>
+                            
+                            <div class="setup-form">
+                                <input type="text" id="githubUsername" placeholder="GitHub 사용자명" value="${gistConfig.username}">
+                                <input type="password" id="githubToken" placeholder="GitHub Personal Access Token" value="${gistConfig.token}">
+                                <input type="text" id="gistId" placeholder="Gist ID (없으면 새로 생성됩니다)" value="${gistConfig.gistId}">
+                                <button onclick="window.saveSettings()">설정 저장 및 동기화 시작</button>
+                            </div>
+                            
+                            <div style="background: #e8f4fd; padding: 15px; border-radius: 10px; margin-top: 20px;">
+                                <h4 style="color: #1976d2; margin-bottom: 10px;">💡 이용 방법</h4>
+                                <ul style="text-align: left; color: #555; line-height: 1.6;">
+                                    <li>토큰과 사용자명만 입력하면 자동으로 Gist가 생성됩니다</li>
+                                    <li>생성된 Gist ID를 다른 사람과 공유하세요</li>
+                                    <li>같은 토큰과 Gist ID로 설정하면 실시간 동기화됩니다</li>
+                                    <li>30초마다 자동으로 데이터를 동기화합니다</li>
+                                </ul>
+                            </div>
+                            
+                            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-top: 20px;">
+                                <h4 style="color: #856404; margin-bottom: 10px;">⚠️ 주의사항</h4>
+                                <ul style="text-align: left; color: #555; line-height: 1.6;">
+                                    <li>토큰은 안전하게 보관하세요 (다른 사람에게 공유 금지)</li>
+                                    <li>사진은 1MB 이하로 업로드하세요</li>
+                                    <li>무료 GitHub 계정으로 충분합니다</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function closeModal() {
+            const modalEl = document.querySelector('.modal-overlay');
+            if (modalEl) {
+                modalEl.style.opacity = '0';
+                modalEl.querySelector('.modal-content').style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    modalEl.remove();
+                }, 300);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    uploadPhoto(file);
+                } else {
+                    alert('이미지 파일만 업로드할 수 있습니다.');
+                }
+            });
+            event.target.value = ''; // 같은 파일 재선택 가능하도록
+        }
+
+        function openImageModal(imageData) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div style="max-width: 90vw; max-height: 90vh; position: relative;">
+                    <img src="${imageData}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;">
+                    <button onclick="closeModal()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer;">&times;</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 10);
+        }
+
+        // 설정 저장
+        async function saveSettings() {
+            console.log('설정 저장 시작');
+            const username = document.getElementById('githubUsername').value.trim();
+            const token = document.getElementById('githubToken').value.trim();
+            const gistId = document.getElementById('gistId').value.trim();
+
+            if (!username || !token) {
+                alert('GitHub 사용자명과 토큰을 입력해주세요.');
+                return;
+            }
+
+            // 설정 저장
+            gistConfig.username = username;
+            gistConfig.token = token;
+            
+            localStorage.setItem('github_username', username);
+            localStorage.setItem('github_token', token);
+
+            // Gist ID가 없으면 새로 생성
+            if (!gistId) {
+                updateSyncStatus('connecting', 'Gist 생성 중...');
+                const tempDB = new GistDatabase(token, '');
+                const newGistId = await tempDB.createGist(currentData);
+                
+                if (newGistId) {
+                    gistConfig.gistId = newGistId;
+                    localStorage.setItem('gist_id', newGistId);
+                    
+                    // Gist ID를 입력 필드에 표시
+                    const gistIdInput = document.getElementById('gistId');
+                    if (gistIdInput) {
+                        gistIdInput.value = newGistId;
+                    }
+                    
+                    alert(`새 Gist가 생성되었습니다!\nGist ID: ${newGistId}\n\n이 ID를 다른 사람과 공유하면 같은 데이터를 사용할 수 있습니다.`);
+                } else {
+                    alert('Gist 생성에 실패했습니다. 토큰 권한을 확인해주세요.');
+                    return;
+                }
+            } else {
+                gistConfig.gistId = gistId;
+                localStorage.setItem('gist_id', gistId);
+            }
+
+            // 초기화 및 동기화 시작
+            window.closeModal();
+            await initializeGist();
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeModal();
+            }
+        });
+
+        // 전역으로 함수들을 등록
+        window.openSettingsModal = openSettingsModal;
+        window.openChecklistModal = openChecklistModal;
+        window.openPhotoModal = openPhotoModal;
+        window.openBudgetModal = openBudgetModal;
+        window.closeModal = closeModal;
+        window.updateChecklist = updateChecklist;
+        window.handleFileUpload = handleFileUpload;
+        window.openImageModal = openImageModal;
+        window.deletePhoto = deletePhoto;
+        window.saveSettings = saveSettings;
+
+        // 페이지 로드시 초기화
+        window.addEventListener('load', function() {
+            console.log('페이지 로드됨, Gist 초기화 중...');
+            initializeGist();
+        });
+    </script>
+</body>
+</html>
