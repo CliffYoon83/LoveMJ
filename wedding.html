@@ -696,10 +696,11 @@
             lastUpdated: Date.now()
         };
 
+        // 기본값이 설정된 gistConfig
         let gistConfig = {
-            token: localStorage.getItem('github_token') || '',
-            gistId: localStorage.getItem('gist_id') || '',
-            username: localStorage.getItem('github_username') || ''
+            token: localStorage.getItem('github_token') || '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',
+            gistId: localStorage.getItem('gist_id') || 'f0c66cbc6fd22a13b378ce0828f9df29',
+            username: localStorage.getItem('github_username') || 'CliffYoon83'
         };
 
         // 기본 예산 데이터 (note 속성 제거하고 모든 항목 수정 가능하게)
