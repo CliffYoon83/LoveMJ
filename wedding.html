@@ -343,6 +343,13 @@
             gap: 15px;
         }
 
+        .checklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .check-item {
             background: white;
             padding: 15px;
@@ -352,6 +359,7 @@
             gap: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .check-item:hover {
@@ -369,6 +377,75 @@
             color: #555;
             cursor: pointer;
             flex: 1;
+            min-height: 20px;
+            line-height: 1.4;
+        }
+
+        .editable-label {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: text;
+            transition: all 0.3s ease;
+            width: 100%;
+            min-height: 20px;
+            line-height: 1.4;
+        }
+
+        .editable-label:hover {
+            background: #f8f9fa;
+            border-color: #ddd;
+        }
+
+        .editable-label:focus {
+            outline: none;
+            background: white;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .delete-item-btn {
+            background: #ff6b7a;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .delete-item-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+            background: #ff4757;
+        }
+
+        .add-item-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .add-item-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
         .save-section {
@@ -691,6 +768,22 @@
         // 전역 변수
         let currentData = {
             checklist: {},
+            weddingChecklist: [
+                { id: 'contract', text: '웨딩계약서 서명 및 회신 (계약 후 2주 이내)', checked: false },
+                { id: 'guest-count', text: '보증인원 확정 (예식 14일 전까지)', checked: false },
+                { id: 'food-ticket', text: '식권 직접 준비 (도장/서명 후 당일 지참)', checked: false },
+                { id: 'parking', text: '혼주 차량 등록 (예식 8일 전까지)', checked: false },
+                { id: 'usb', text: '영상/축가 USB 준비 (VOB, AVI, MP4 형식)', checked: false },
+                { id: 'dress', text: '리셉션 드레스 피팅 (평일, 셀프 3만원/직원 4만원)', checked: false }
+            ],
+            honeymoonChecklist: [
+                { id: 'seat-reservation', text: '하루 전날 좌석 예약하기', checked: false },
+                { id: 'travel-payment', text: '여행사 결제 완료 ✅', checked: true },
+                { id: 'esta', text: 'ESTA 신청 ($21/인)', checked: false },
+                { id: 'passport', text: '여권 유효기간 확인', checked: false },
+                { id: 'snap-tip', text: '스냅 촬영 작가팁 준비 ($30/인)', checked: false },
+                { id: 'travel-insurance', text: '여행자보험 확인 (2억원 포함)', checked: false }
+            ],
             photos: [],
             budget: [],
             lastUpdated: Date.now()
@@ -920,6 +1013,132 @@
             }
         }
 
+        // 체크리스트 관련 함수들
+        function renderWeddingChecklist() {
+            if (!currentData.weddingChecklist || currentData.weddingChecklist.length === 0) {
+                return '<p style="text-align: center; color: #666;">체크리스트가 없습니다.</p>';
+            }
+            
+            return currentData.weddingChecklist.map((item, index) => `
+                <div class="check-item">
+                    <input type="checkbox" id="wedding_${item.id}" ${item.checked ? 'checked' : ''} 
+                           onchange="updateWeddingChecklistItem(${index}, 'checked', this.checked)">
+                    <label for="wedding_${item.id}" class="editable-label" contenteditable="true"
+                           onblur="updateWeddingChecklistItem(${index}, 'text', this.textContent)"
+                           data-placeholder="체크리스트 항목을 입력하세요...">${item.text}</label>
+                    <button class="delete-item-btn" onclick="deleteWeddingChecklistItem(${index})" title="삭제">×</button>
+                </div>
+            `).join('');
+        }
+
+        function renderHoneymoonChecklist() {
+            if (!currentData.honeymoonChecklist || currentData.honeymoonChecklist.length === 0) {
+                return '<p style="text-align: center; color: #666;">체크리스트가 없습니다.</p>';
+            }
+            
+            return currentData.honeymoonChecklist.map((item, index) => `
+                <div class="check-item">
+                    <input type="checkbox" id="honeymoon_${item.id}" ${item.checked ? 'checked' : ''} 
+                           onchange="updateHoneymoonChecklistItem(${index}, 'checked', this.checked)">
+                    <label for="honeymoon_${item.id}" class="editable-label" contenteditable="true"
+                           onblur="updateHoneymoonChecklistItem(${index}, 'text', this.textContent)"
+                           data-placeholder="체크리스트 항목을 입력하세요...">${item.text}</label>
+                    <button class="delete-item-btn" onclick="deleteHoneymoonChecklistItem(${index})" title="삭제">×</button>
+                </div>
+            `).join('');
+        }
+
+        // 결혼식 체크리스트 관리
+        window.updateWeddingChecklistItem = function(index, property, value) {
+            if (currentData.weddingChecklist[index]) {
+                currentData.weddingChecklist[index][property] = value;
+                saveData();
+                
+                // 시각적 피드백
+                if (property === 'checked') {
+                    const checkItem = document.querySelector(`#wedding_${currentData.weddingChecklist[index].id}`).closest('.check-item');
+                    if (checkItem) {
+                        checkItem.style.backgroundColor = value ? '#e8f5e8' : '#ffe8e8';
+                        setTimeout(() => {
+                            checkItem.style.backgroundColor = '';
+                        }, 800);
+                    }
+                }
+            }
+        }
+
+        window.deleteWeddingChecklistItem = function(index) {
+            if (confirm('이 체크리스트 항목을 삭제하시겠습니까?')) {
+                currentData.weddingChecklist.splice(index, 1);
+                saveData();
+                updateWeddingChecklistDisplay();
+            }
+        }
+
+        window.addWeddingChecklistItem = function() {
+            const newItem = {
+                id: 'wedding_' + Date.now(),
+                text: '새 체크리스트 항목',
+                checked: false
+            };
+            currentData.weddingChecklist.push(newItem);
+            saveData();
+            updateWeddingChecklistDisplay();
+        }
+
+        // 신혼여행 체크리스트 관리
+        window.updateHoneymoonChecklistItem = function(index, property, value) {
+            if (currentData.honeymoonChecklist[index]) {
+                currentData.honeymoonChecklist[index][property] = value;
+                saveData();
+                
+                // 시각적 피드백
+                if (property === 'checked') {
+                    const checkItem = document.querySelector(`#honeymoon_${currentData.honeymoonChecklist[index].id}`).closest('.check-item');
+                    if (checkItem) {
+                        checkItem.style.backgroundColor = value ? '#e8f5e8' : '#ffe8e8';
+                        setTimeout(() => {
+                            checkItem.style.backgroundColor = '';
+                        }, 800);
+                    }
+                }
+            }
+        }
+
+        window.deleteHoneymoonChecklistItem = function(index) {
+            if (confirm('이 체크리스트 항목을 삭제하시겠습니까?')) {
+                currentData.honeymoonChecklist.splice(index, 1);
+                saveData();
+                updateHoneymoonChecklistDisplay();
+            }
+        }
+
+        window.addHoneymoonChecklistItem = function() {
+            const newItem = {
+                id: 'honeymoon_' + Date.now(),
+                text: '새 체크리스트 항목',
+                checked: false
+            };
+            currentData.honeymoonChecklist.push(newItem);
+            saveData();
+            updateHoneymoonChecklistDisplay();
+        }
+
+        // 체크리스트 디스플레이 업데이트
+        function updateWeddingChecklistDisplay() {
+            const checklistContainer = document.querySelector('#weddingChecklistContainer');
+            if (checklistContainer) {
+                checklistContainer.innerHTML = renderWeddingChecklist();
+            }
+        }
+
+        function updateHoneymoonChecklistDisplay() {
+            const checklistContainer = document.querySelector('#honeymoonChecklistContainer');
+            if (checklistContainer) {
+                checklistContainer.innerHTML = renderHoneymoonChecklist();
+            }
+        }
+
         // 체크리스트 업데이트
         function updateChecklist(checkboxId, checked) {
             currentData.checklist[checkboxId] = checked;
@@ -969,6 +1188,10 @@
 
             // 예산 모달 업데이트
             updateBudgetModal();
+            
+            // 체크리스트 업데이트
+            updateWeddingChecklistDisplay();
+            updateHoneymoonChecklistDisplay();
         }
 
         // 예산 관련 함수들
@@ -1275,37 +1498,19 @@
                         </div>
 
                         <div class="info-section">
-                            <h3>📋 중요 준비사항</h3>
-                            <div class="checklist">
-                                <div class="check-item">
-                                    <input type="checkbox" id="contract">
-                                    <label for="contract">웨딩계약서 서명 및 회신 (계약 후 2주 이내)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="guest-count">
-                                    <label for="guest-count">보증인원 확정 (예식 14일 전까지)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="food-ticket">
-                                    <label for="food-ticket">식권 직접 준비 (도장/서명 후 당일 지참)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="parking">
-                                    <label for="parking">혼주 차량 등록 (예식 8일 전까지)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="usb">
-                                    <label for="usb">영상/축가 USB 준비 (VOB, AVI, MP4 형식)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="dress">
-                                    <label for="dress">리셉션 드레스 피팅 (평일, 셀프 3만원/직원 4만원)</label>
-                                </div>
+                            <div class="checklist-header">
+                                <h3>📋 중요 준비사항</h3>
+                                <button class="add-item-btn" onclick="addWeddingChecklistItem()">
+                                    ➕ 항목 추가
+                                </button>
+                            </div>
+                            <div class="checklist" id="weddingChecklistContainer">
+                                ${renderWeddingChecklist()}
                             </div>
                             
                             <div class="save-section">
                                 <p style="font-size: 0.9em; color: #667eea; margin-top: 10px;">
-                                    💡 체크박스를 클릭하면 자동으로 GitHub Gist에 저장됩니다
+                                    💡 체크박스를 클릭하거나 텍스트를 편집하면 자동으로 GitHub Gist에 저장됩니다
                                 </p>
                             </div>
                         </div>
@@ -1402,37 +1607,19 @@
                         </div>
 
                         <div class="info-section">
-                            <h3>✅ 준비 체크리스트</h3>
-                            <div class="checklist">
-                                <div class="check-item">
-                                    <input type="checkbox" id="seat-reservation">
-                                    <label for="seat-reservation">하루 전날 좌석 예약하기</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="travel-payment" checked>
-                                    <label for="travel-payment">여행사 결제 완료 ✅</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="esta">
-                                    <label for="esta">ESTA 신청 ($21/인)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="passport">
-                                    <label for="passport">여권 유효기간 확인</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="snap-tip">
-                                    <label for="snap-tip">스냅 촬영 작가팁 준비 ($30/인)</label>
-                                </div>
-                                <div class="check-item">
-                                    <input type="checkbox" id="travel-insurance">
-                                    <label for="travel-insurance">여행자보험 확인 (2억원 포함)</label>
-                                </div>
+                            <div class="checklist-header">
+                                <h3>✅ 준비 체크리스트</h3>
+                                <button class="add-item-btn" onclick="addHoneymoonChecklistItem()">
+                                    ➕ 항목 추가
+                                </button>
+                            </div>
+                            <div class="checklist" id="honeymoonChecklistContainer">
+                                ${renderHoneymoonChecklist()}
                             </div>
                             
                             <div class="save-section">
                                 <p style="font-size: 0.9em; color: #667eea; margin-top: 10px;">
-                                    💡 체크박스를 클릭하면 자동으로 GitHub Gist에 저장됩니다
+                                    💡 체크박스를 클릭하거나 텍스트를 편집하면 자동으로 GitHub Gist에 저장됩니다
                                 </p>
                             </div>
                         </div>
